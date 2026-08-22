@@ -7,6 +7,7 @@ Arrancar en desarrollo con:
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -19,6 +20,22 @@ app = FastAPI(
     title="AI-Code-Analyzer",
     description="Analiza repositorios publicos de GitHub usando la GitHub REST API.",
     version="0.1.0",
+)
+
+# Origenes permitidos para desarrollo local con Vite
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["GET", "OPTIONS"],
+    allow_headers=["*"],
 )
 
 app.include_router(router)

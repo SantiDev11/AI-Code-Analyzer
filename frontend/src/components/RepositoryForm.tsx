@@ -1,7 +1,16 @@
 import React, { useState } from 'react';
-import type { FormStatus } from '../types';
+import { analyzeRepository, ApiError } from '../services/api';
+import type { AnalysisResponse, FormStatus } from '../types';
 
-export const RepositoryForm: React.FC = () => {
+interface RepositoryFormProps {
+  onAnalysisSuccess: (data: AnalysisResponse) => void;
+  onAnalysisStart?: () => void;
+}
+
+export const RepositoryForm: React.FC<RepositoryFormProps> = ({
+  onAnalysisSuccess,
+  onAnalysisStart,
+}) => {
   const [owner, setOwner] = useState<string>('');
   const [repo, setRepo] = useState<string>('');
   const [status, setStatus] = useState<FormStatus>('idle');
@@ -10,44 +19,63 @@ export const RepositoryForm: React.FC = () => {
   const ownerTrimmed = owner.trim();
   const repoTrimmed = repo.trim();
 
-  // Validacion de formato de nombres de GitHub
+  // Validacion de formato de identificadores de GitHub
   const isOwnerValid = /^[a-zA-Z0-9_-]+$/.test(ownerTrimmed);
   const isRepoValid = /^[a-zA-Z0-9_.-]+$/.test(repoTrimmed);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    if (status === 'loading') {
+      return;
+    }
+
     if (!ownerTrimmed) {
-      setStatus('invalid');
+      setStatus('error');
       setErrorMessage('Por favor, introduce el propietario u organización.');
       return;
     }
 
     if (!isOwnerValid) {
-      setStatus('invalid');
+      setStatus('error');
       setErrorMessage('El nombre del propietario contiene caracteres no válidos.');
       return;
     }
 
     if (!repoTrimmed) {
-      setStatus('invalid');
+      setStatus('error');
       setErrorMessage('Por favor, introduce el nombre del repositorio.');
       return;
     }
 
     if (!isRepoValid) {
-      setStatus('invalid');
+      setStatus('error');
       setErrorMessage('El nombre del repositorio contiene caracteres no válidos.');
       return;
     }
 
-    // Estado válido preparado para la siguiente fase de integración
-    setStatus('valid');
+    setStatus('loading');
     setErrorMessage(null);
+    onAnalysisStart?.();
+
+    try {
+      const data = await analyzeRepository(ownerTrimmed, repoTrimmed);
+      setStatus('success');
+      onAnalysisSuccess(data);
+    } catch (err) {
+      setStatus('error');
+      if (err instanceof ApiError) {
+        setErrorMessage(err.message);
+      } else if (err instanceof Error) {
+        setErrorMessage(err.message);
+      } else {
+        setErrorMessage('Ocurrió un error inesperado al conectar con el servidor.');
+      }
+    }
   };
 
   const getOwnerInputClass = () => {
-    if (status === 'invalid' && (!ownerTrimmed || !isOwnerValid)) {
+    if (status === 'error' && (!ownerTrimmed || !isOwnerValid)) {
       return 'analyzer-form-input is-invalid';
     }
     if (ownerTrimmed && isOwnerValid) {
@@ -57,7 +85,7 @@ export const RepositoryForm: React.FC = () => {
   };
 
   const getRepoInputClass = () => {
-    if (status === 'invalid' && (!repoTrimmed || !isRepoValid)) {
+    if (status === 'error' && (!repoTrimmed || !isRepoValid)) {
       return 'analyzer-form-input is-invalid';
     }
     if (repoTrimmed && isRepoValid) {
@@ -100,13 +128,14 @@ export const RepositoryForm: React.FC = () => {
                   className={getOwnerInputClass()}
                   placeholder="ej. encode"
                   value={owner}
+                  disabled={status === 'loading'}
                   onChange={(e) => {
                     setOwner(e.target.value);
                     if (status !== 'idle') setStatus('idle');
                     setErrorMessage(null);
                   }}
                   aria-describedby="owner-helper"
-                  aria-invalid={status === 'invalid' && (!ownerTrimmed || !isOwnerValid)}
+                  aria-invalid={status === 'error' && (!ownerTrimmed || !isOwnerValid)}
                   autoComplete="off"
                   spellCheck="false"
                   required
@@ -130,13 +159,14 @@ export const RepositoryForm: React.FC = () => {
                   className={getRepoInputClass()}
                   placeholder="ej. httpx"
                   value={repo}
+                  disabled={status === 'loading'}
                   onChange={(e) => {
                     setRepo(e.target.value);
                     if (status !== 'idle') setStatus('idle');
                     setErrorMessage(null);
                   }}
                   aria-describedby="repo-helper"
-                  aria-invalid={status === 'invalid' && (!repoTrimmed || !isRepoValid)}
+                  aria-invalid={status === 'error' && (!repoTrimmed || !isRepoValid)}
                   autoComplete="off"
                   spellCheck="false"
                   required
@@ -153,10 +183,14 @@ export const RepositoryForm: React.FC = () => {
               </div>
             )}
 
-            {status === 'valid' && (
-              <div className="analyzer-status-banner is-loading" role="status">
+            {status === 'loading' && (
+              <div className="analyzer-status-banner is-loading" role="status" aria-live="polite">
                 <p>
-                  Parámetros válidos: <strong>{ownerTrimmed}/{repoTrimmed}</strong>. Listo para análisis.
+                  Consultando GitHub API y calculando métricas para{' '}
+                  <strong>
+                    {ownerTrimmed}/{repoTrimmed}
+                  </strong>
+                  ...
                 </p>
               </div>
             )}
@@ -166,6 +200,7 @@ export const RepositoryForm: React.FC = () => {
                 type="submit"
                 className="analyzer-submit-button"
                 disabled={status === 'loading'}
+                aria-busy={status === 'loading'}
               >
                 {status === 'loading' ? (
                   <>
