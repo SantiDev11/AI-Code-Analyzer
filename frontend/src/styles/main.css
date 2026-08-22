@@ -1228,5 +1228,230 @@ button, input {
   color: var(--color-text-primary);
 }
 
+/* --------------------------------------------------------------------------
+   Recent Commits Analysis Section
+   -------------------------------------------------------------------------- */
+
+.commits-section {
+  padding-top: 0;
+  padding-bottom: 3rem;
+}
+
+.commits-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 2rem;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.commits-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.commits-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.commits-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.commits-count-badge {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+}
+
+.commits-count-badge strong {
+  color: var(--color-accent);
+}
+
+.commits-subtitle {
+  font-size: 0.9375rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.commits-empty {
+  padding: 1.5rem 0;
+}
+
+/* Timeline */
+.commits-timeline {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  position: relative;
+}
+
+.commit-item {
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.commit-item::before {
+  content: '';
+  position: absolute;
+  left: 0.375rem;
+  top: 1.25rem;
+  bottom: -0.5rem;
+  width: 2px;
+  background-color: var(--color-border-subtle);
+}
+
+.commit-item:last-child::before {
+  display: none;
+}
+
+.commit-entry {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding-bottom: 1.5rem;
+}
+
+.commit-timeline-marker {
+  position: absolute;
+  left: 0.125rem;
+  top: 0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.75rem;
+  height: 0.75rem;
+  background-color: var(--color-surface);
+}
+
+.commit-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background-color: var(--color-accent);
+  border: 2px solid var(--color-surface);
+  box-shadow: 0 0 0 2px rgba(47, 129, 247, 0.4);
+}
+
+.commit-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  width: 100%;
+  min-width: 0;
+  background-color: var(--color-surface-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.875rem 1.125rem;
+  transition: border-color var(--transition-fast);
+}
+
+.commit-content:hover {
+  border-color: var(--color-border-focus);
+}
+
+.commit-main-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+@media (max-width: 640px) {
+  .commit-main-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+
+.commit-message {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.commit-sha-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  color: var(--color-accent);
+  background-color: var(--color-accent-subtle);
+  border: 1px solid rgba(56, 139, 253, 0.3);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.commit-sha-badge:hover {
+  background-color: rgba(56, 139, 253, 0.25);
+  border-color: var(--color-accent);
+  text-decoration: none;
+}
+
+.commit-external-icon {
+  opacity: 0.75;
+}
+
+.commit-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.commit-author {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.commit-author-icon {
+  color: var(--color-text-muted);
+}
+
+.commit-author-name {
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.commit-author-unknown {
+  font-style: italic;
+  color: var(--color-text-muted);
+}
+
+.commit-date-separator {
+  color: var(--color-border);
+}
+
+.commit-time {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+
 
 
