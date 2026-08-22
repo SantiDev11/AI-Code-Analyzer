@@ -13,6 +13,9 @@ class Repository(BaseModel):
     """Datos generales de un repositorio de GitHub."""
 
     name: str = Field(description="Nombre del repositorio")
+    full_name: str = Field(
+        description="Nombre completo con el propietario, por ejemplo 'encode/httpx'"
+    )
     description: str | None = Field(
         description="Descripcion del repositorio, o null si no tiene"
     )
@@ -83,6 +86,7 @@ class AnalysisResponse(BaseModel):
             "example": {
                 "repository": {
                     "name": "fastapi",
+                    "full_name": "fastapi/fastapi",
                     "description": "FastAPI framework, high performance",
                     "stars": 78000,
                     "forks": 6600,

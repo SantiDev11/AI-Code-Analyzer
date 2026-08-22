@@ -15,6 +15,7 @@ from app.services import github
 # Respuesta tipica de GET /repos/{owner}/{repo}, recortada a lo que usamos.
 REPO_PAYLOAD = {
     "name": "httpx",
+    "full_name": "encode/httpx",
     "description": "A next generation HTTP client for Python.",
     "stargazers_count": 15429,
     "forks_count": 1256,

@@ -242,6 +242,7 @@ def _to_repository(data: dict) -> Repository:
     """Traduce la respuesta de GitHub a nuestro modelo Repository."""
     return Repository(
         name=data["name"],
+        full_name=data["full_name"],
         description=data["description"],
         stars=data["stargazers_count"],
         forks=data["forks_count"],

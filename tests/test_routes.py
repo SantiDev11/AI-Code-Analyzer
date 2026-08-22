@@ -37,6 +37,7 @@ def test_analyze_devuelve_la_estructura_esperada(client, fake_github):
     }
     assert set(body["repository"]) == {
         "name",
+        "full_name",
         "description",
         "stars",
         "forks",

@@ -21,6 +21,7 @@ async def test_analiza_repositorio_correctamente(fake_github):
     result = await github.analyze_repository("encode", "httpx")
 
     assert result.repository.name == REPO_PAYLOAD["name"]
+    assert result.repository.full_name == REPO_PAYLOAD["full_name"]
     assert result.repository.stars == REPO_PAYLOAD["stargazers_count"]
     assert result.repository.forks == REPO_PAYLOAD["forks_count"]
     assert result.repository.open_issues == REPO_PAYLOAD["open_issues_count"]

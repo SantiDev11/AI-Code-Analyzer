@@ -24,6 +24,7 @@ curl http://127.0.0.1:8000/analyze/encode/httpx
 {
   "repository": {
     "name": "httpx",
+    "full_name": "encode/httpx",
     "description": "A next generation HTTP client for Python.",
     "stars": 15429,
     "forks": 1256,
