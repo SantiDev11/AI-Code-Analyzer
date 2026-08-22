@@ -5,6 +5,7 @@ nosotros. La traduccion entre ambos formatos ocurre en app/services/github.py.
 """
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -61,6 +62,24 @@ class Release(BaseModel):
     url: str = Field(description="URL de la release en GitHub")
 
 
+class Issue(BaseModel):
+    """Un issue del repositorio.
+
+    Los pull requests se descartan antes de llegar aqui: GitHub los sirve por
+    el mismo endpoint, pero no son issues.
+    """
+
+    number: int = Field(description="Numero del issue dentro del repositorio")
+    title: str = Field(description="Titulo del issue")
+    state: Literal["open", "closed"] = Field(description="Si esta abierto o cerrado")
+    author: str | None = Field(
+        description="Quien lo abrio, o null si la cuenta ya no existe"
+    )
+    created_at: datetime = Field(description="Fecha de apertura (UTC)")
+    updated_at: datetime = Field(description="Fecha de la ultima actualizacion (UTC)")
+    url: str = Field(description="URL del issue en GitHub")
+
+
 class Commit(BaseModel):
     """Un commit del historial reciente."""
 
@@ -93,6 +112,15 @@ class AnalysisResponse(BaseModel):
     recent_commits: list[Commit] = Field(
         description="Ultimos commits de la rama principal, del mas reciente al mas antiguo"
     )
+    issues: list[Issue] = Field(
+        description=(
+            "Issues analizados, sin pull requests. Es una muestra reciente, "
+            "no el historial completo del repositorio"
+        )
+    )
+    issues_count: int = Field(description="Cuantos issues incluye la lista `issues`")
+    open_issues_count: int = Field(description="Cuantos de esos issues estan abiertos")
+    closed_issues_count: int = Field(description="Cuantos de esos issues estan cerrados")
     cached: bool = Field(
         default=False,
         description="True si la respuesta viene de la cache y no de GitHub",
@@ -142,6 +170,20 @@ class AnalysisResponse(BaseModel):
                         "url": "https://github.com/fastapi/fastapi/commit/a1b2c3d",
                     }
                 ],
+                "issues": [
+                    {
+                        "number": 15,
+                        "title": "Improve error handling",
+                        "state": "open",
+                        "author": "SantiDev11",
+                        "created_at": "2026-08-22T10:30:00Z",
+                        "updated_at": "2026-08-22T12:00:00Z",
+                        "url": "https://github.com/fastapi/fastapi/issues/15",
+                    }
+                ],
+                "issues_count": 1,
+                "open_issues_count": 1,
+                "closed_issues_count": 0,
                 "cached": False,
             }
         }

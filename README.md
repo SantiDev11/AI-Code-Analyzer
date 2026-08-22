@@ -12,6 +12,7 @@ a traves de la GitHub REST API.
 |---|---|---|
 | `GET` | `/analyze/{owner}/{repo}` | Analiza un repositorio publico |
 | `GET` | `/analyze/{owner}/{repo}?commits=N` | Igual, pidiendo N commits recientes |
+| `GET` | `/analyze/{owner}/{repo}?issues=N` | Igual, analizando N issues |
 | `GET` | `/health` | Comprueba que el servicio esta vivo |
 | `GET` | `/docs` | Documentacion interactiva (Swagger UI) |
 
@@ -99,8 +100,8 @@ pip install -r requirements.txt
 ## Token de GitHub (opcional)
 
 Sin token la API permite **60 peticiones/hora** por IP. Como cada analisis hace
-5 peticiones, son solo **12 analisis/hora**. Con un token se sube a 5000/hora,
-es decir unos 1000 analisis. Se recomienda configurarlo.
+6 peticiones, son solo **10 analisis/hora**. Con un token se sube a 5000/hora,
+es decir unos 830 analisis. Se recomienda configurarlo.
 
 1. Crea un token en <https://github.com/settings/tokens> **sin marcar ningun
    scope** (solo necesitamos leer datos publicos).
@@ -114,7 +115,7 @@ El archivo `.env` esta en `.gitignore` y nunca se sube al repositorio.
 
 ## Cache
 
-Cada analisis consume 5 peticiones de la cuota de GitHub, asi que los
+Cada analisis consume 6 peticiones de la cuota de GitHub, asi que los
 resultados se guardan en memoria durante 5 minutos por defecto. Una segunda
 consulta al mismo repositorio se responde al instante y sin gastar cuota:
 
@@ -175,7 +176,7 @@ aislada y cambiar una capa sin tocar las demas.
 
 ## Como funciona por dentro
 
-Un analisis necesita cinco endpoints distintos de GitHub, que se consultan **en
+Un analisis necesita seis endpoints distintos de GitHub, que se consultan **en
 paralelo** con `asyncio.gather`:
 
 | Dato | Endpoint de GitHub |
@@ -185,6 +186,17 @@ paralelo** con `asyncio.gather`:
 | Contributors | `GET /repos/{owner}/{repo}/contributors?per_page=10` |
 | Ultima release | `GET /repos/{owner}/{repo}/releases/latest` |
 | Commits recientes | `GET /repos/{owner}/{repo}/commits?per_page=10` |
+| Issues | `GET /repos/{owner}/{repo}/issues?per_page=10&state=all` |
+
+De issues se analizan **10** por defecto, ajustables con `issues` (1-100).
+GitHub sirve los pull requests por el mismo endpoint que los issues, asi que se
+descartan mirando la clave `pull_request`, que solo ellos llevan. Los tres
+contadores (`issues_count`, `open_issues_count`, `closed_issues_count`) se
+calculan despues de ese filtro, sobre los issues que de verdad analizamos.
+
+Cuidado con no confundir `repository.open_issues`, que es el contador de GitHub
+e **incluye pull requests**, con `open_issues_count`, que cuenta solo issues
+reales de la muestra analizada.
 
 De commits recientes se devuelven **10** por defecto. La cantidad se ajusta con
 el parametro `commits` (entre 1 y 100, el maximo que sirve GitHub por pagina);
@@ -201,6 +213,7 @@ Algunos codigos de GitHub no son errores segun el endpoint:
 |---|---|---|---|
 | `/releases/latest` | 404 | El repositorio no tiene releases | `null` |
 | `/commits` | 409 | El repositorio esta vacio | `[]` |
+| `/issues` | 404 | El repositorio tiene los issues desactivados | `[]` |
 | `/contributors` | 204 | El repositorio esta vacio | `0` |
 | `/contributors` | 403 | Historial demasiado grande para listarlo | `[]` |
 

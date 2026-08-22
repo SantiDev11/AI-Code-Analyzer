@@ -15,6 +15,7 @@ from app.schemas.repository import (
     AnalysisResponse,
     Commit,
     Contributor,
+    Issue,
     Release,
     Repository,
 )
@@ -29,6 +30,10 @@ RECENT_COMMITS_LIMIT = 10
 # Tope admitido. GitHub no sirve mas de 100 por pagina, asi que pedir mas no
 # devolveria commits adicionales: solo gastaria cuota.
 MAX_RECENT_COMMITS = 100
+
+# Cuantos issues se analizan si no se pide otra cosa, y el tope admitido.
+ISSUES_LIMIT = 10
+MAX_ISSUES = 100
 
 # Cuantos contribuidores se incluyen. GitHub los devuelve ya ordenados de mas a
 # menos contribuciones, asi que la primera pagina es directamente el top.
@@ -186,6 +191,31 @@ async def _fetch_latest_release(
     )
 
 
+async def _fetch_issues(
+    client: httpx.AsyncClient, owner: str, repo: str, limit: int
+) -> list[Issue]:
+    """GET /repos/{owner}/{repo}/issues -> issues abiertos y cerrados.
+
+    Hace falta state=all porque GitHub devuelve solo los abiertos por defecto,
+    y sin los cerrados el recuento de cerrados seria siempre cero.
+
+    Un 404 o un 410 aqui NO significan que el repositorio no exista: es lo que
+    responde GitHub cuando el repositorio tiene los issues desactivados. La
+    lista vacia es la respuesta correcta. Si de verdad no existiera, la llamada
+    a /repos lo detectaria y lanzaria RepositoryNotFound.
+    """
+    response = await client.get(
+        f"/repos/{owner}/{repo}/issues",
+        params={"per_page": limit, "state": "all"},
+    )
+
+    if response.status_code in (404, 410):
+        return []
+
+    _raise_for_status(response)
+    return _to_issues(response.json())
+
+
 async def _fetch_recent_commits(
     client: httpx.AsyncClient, owner: str, repo: str, limit: int
 ) -> list[Commit]:
@@ -232,6 +262,43 @@ def _to_commit(data: dict) -> Commit:
         date=firma["date"],
         url=data["html_url"],
     )
+
+
+def _es_pull_request(item: object) -> bool:
+    """True si el elemento es un pull request y no un issue.
+
+    GitHub sirve ambos por /issues. El unico distintivo fiable es la clave
+    "pull_request", que solo aparece en los pull requests.
+    """
+    return isinstance(item, dict) and "pull_request" in item
+
+
+def _to_issues(data: object) -> list[Issue]:
+    """Traduce los issues de GitHub, descartando los pull requests.
+
+    Si la respuesta no tiene la forma esperada preferimos un error controlado
+    (que la capa de rutas traduce a 502) antes que un fallo interno.
+    """
+    try:
+        return [
+            Issue(
+                number=item["number"],
+                title=item["title"],
+                state=item["state"],
+                # "user" es quien lo abrio; GitHub lo manda null si la cuenta
+                # fue borrada. Sin cuenta no hay autor: null antes que inventar.
+                author=(item.get("user") or {}).get("login"),
+                created_at=item["created_at"],
+                updated_at=item["updated_at"],
+                url=item["html_url"],
+            )
+            for item in data
+            if not _es_pull_request(item)
+        ]
+    except (TypeError, KeyError, ValidationError) as error:
+        raise GitHubError(
+            f"Lista de issues con un formato inesperado: {error}"
+        ) from error
 
 
 def _to_commits(data: object) -> list[Commit]:
@@ -306,27 +373,36 @@ def _to_repository(data: dict) -> Repository:
     )
 
 
-def _cache_key(owner: str, repo: str, commits_limit: int) -> str:
+def _cache_key(
+    owner: str, repo: str, commits_limit: int, issues_limit: int
+) -> str:
     """Clave de cache. GitHub no distingue mayusculas en owner ni en repo.
 
-    El limite forma parte de la clave: pedir 30 commits despues de pedir 10
-    debe volver a consultar GitHub, no reutilizar la respuesta corta.
+    Los limites forman parte de la clave: pedir 30 commits despues de pedir 10
+    debe volver a consultar GitHub, no reutilizar la respuesta corta. Cada
+    limite que el usuario puede elegir tiene que aparecer aqui.
     """
-    return f"{owner.lower()}/{repo.lower()}#{commits_limit}"
+    return (
+        f"{owner.lower()}/{repo.lower()}"
+        f"#commits={commits_limit}#issues={issues_limit}"
+    )
 
 
 async def analyze_repository(
-    owner: str, repo: str, commits_limit: int = RECENT_COMMITS_LIMIT
+    owner: str,
+    repo: str,
+    commits_limit: int = RECENT_COMMITS_LIMIT,
+    issues_limit: int = ISSUES_LIMIT,
 ) -> AnalysisResponse:
     """Devuelve el analisis completo del repositorio.
 
     Si el mismo repositorio se consulto hace poco, se reutiliza el resultado
     guardado en cache y no se llama a GitHub.
 
-    Las cinco peticiones son independientes entre si, por lo que se lanzan en
-    paralelo: el tiempo total es el de la mas lenta, no la suma de las cinco.
+    Las seis peticiones son independientes entre si, por lo que se lanzan en
+    paralelo: el tiempo total es el de la mas lenta, no la suma de las seis.
     """
-    key = _cache_key(owner, repo, commits_limit)
+    key = _cache_key(owner, repo, commits_limit, issues_limit)
 
     cached_result = _cache.get(key)
     if cached_result is not None:
@@ -341,12 +417,14 @@ async def analyze_repository(
                 contributors,
                 latest_release,
                 recent_commits,
+                issues,
             ) = await asyncio.gather(
                 _fetch_repository(client, owner, repo),
                 _fetch_languages(client, owner, repo),
                 _fetch_contributors(client, owner, repo),
                 _fetch_latest_release(client, owner, repo),
                 _fetch_recent_commits(client, owner, repo, commits_limit),
+                _fetch_issues(client, owner, repo, issues_limit),
             )
         except httpx.TimeoutException as error:
             raise GitHubUnavailable("GitHub ha tardado demasiado en responder") from error
@@ -360,6 +438,12 @@ async def analyze_repository(
         contributors_count=len(contributors),
         latest_release=latest_release,
         recent_commits=recent_commits,
+        issues=issues,
+        # Los contadores describen los issues que hemos analizado, ya sin
+        # pull requests, asi que abiertos + cerrados siempre suman el total.
+        issues_count=len(issues),
+        open_issues_count=sum(1 for issue in issues if issue.state == "open"),
+        closed_issues_count=sum(1 for issue in issues if issue.state == "closed"),
     )
     _cache.set(key, result)
     return result

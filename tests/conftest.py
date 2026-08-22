@@ -51,6 +51,39 @@ COMMITS_PAYLOAD = [
     }
 ]
 
+# Respuesta de GET /issues. GitHub mezcla issues y pull requests: el tercer
+# elemento lleva la clave "pull_request" y por tanto NO es un issue.
+ISSUES_PAYLOAD = [
+    {
+        "number": 15,
+        "title": "Improve error handling",
+        "state": "open",
+        "user": {"login": "SantiDev11"},
+        "created_at": "2026-08-22T10:30:00Z",
+        "updated_at": "2026-08-22T12:00:00Z",
+        "html_url": "https://github.com/encode/httpx/issues/15",
+    },
+    {
+        "number": 12,
+        "title": "Timeout mal documentado",
+        "state": "closed",
+        "user": {"login": "tomchristie"},
+        "created_at": "2026-07-01T08:00:00Z",
+        "updated_at": "2026-07-05T11:20:00Z",
+        "html_url": "https://github.com/encode/httpx/issues/12",
+    },
+    {
+        "number": 11,
+        "title": "Bump actions/setup-python",
+        "state": "open",
+        "user": {"login": "dependabot[bot]"},
+        "created_at": "2026-06-30T07:00:00Z",
+        "updated_at": "2026-06-30T07:00:00Z",
+        "html_url": "https://github.com/encode/httpx/pull/11",
+        "pull_request": {"url": "https://api.github.com/.../pulls/11"},
+    },
+]
+
 # Respuesta de GET /contributors, recortada a los campos que usamos.
 CONTRIBUTORS_PAYLOAD = [
     {
@@ -118,6 +151,9 @@ def successful_handler(request: httpx.Request) -> httpx.Response:
 
     if path.endswith("/commits"):
         return httpx.Response(200, json=COMMITS_PAYLOAD)
+
+    if path.endswith("/issues"):
+        return httpx.Response(200, json=ISSUES_PAYLOAD)
 
     if path.endswith("/languages"):
         return httpx.Response(200, json=LANGUAGES_PAYLOAD)

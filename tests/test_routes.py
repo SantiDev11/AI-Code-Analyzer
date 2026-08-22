@@ -60,6 +60,10 @@ def test_analyze_devuelve_la_estructura_esperada(client, fake_github):
         "contributors_count",
         "latest_release",
         "recent_commits",
+        "issues",
+        "issues_count",
+        "open_issues_count",
+        "closed_issues_count",
         "cached",
     }
     assert set(body["repository"]) == {
