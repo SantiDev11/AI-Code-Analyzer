@@ -6,6 +6,7 @@ import { Footer } from '../components/Footer';
 import { RepositoryOverview } from '../components/overview/RepositoryOverview';
 import { RepositoryOverviewSkeleton } from '../components/overview/RepositoryOverviewSkeleton';
 import { LanguagesAnalysis } from '../components/LanguagesAnalysis';
+import { ContributorsAnalysis } from '../components/ContributorsAnalysis';
 import type { AnalysisResponse } from '../types';
 
 export const HomePage: React.FC = () => {
@@ -40,6 +41,10 @@ export const HomePage: React.FC = () => {
           <>
             <RepositoryOverview repository={analysisResult.repository} />
             <LanguagesAnalysis languages={analysisResult.languages} />
+            <ContributorsAnalysis
+              contributors={analysisResult.contributors}
+              contributorsCount={analysisResult.contributors_count}
+            />
           </>
         )}
 
