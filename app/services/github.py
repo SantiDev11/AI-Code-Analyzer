@@ -8,9 +8,16 @@ capa de rutas traducira despues.
 import asyncio
 
 import httpx
+from pydantic import ValidationError
 
 from app.config import settings
-from app.schemas.repository import AnalysisResponse, Commit, Release, Repository
+from app.schemas.repository import (
+    AnalysisResponse,
+    Commit,
+    Contributor,
+    Release,
+    Repository,
+)
 from app.services.cache import TTLCache
 
 API_BASE = "https://api.github.com"
@@ -18,6 +25,10 @@ TIMEOUT = httpx.Timeout(10.0)
 
 # Cuantos commits recientes se incluyen en el analisis.
 RECENT_COMMITS_LIMIT = 5
+
+# Cuantos contribuidores se incluyen. GitHub los devuelve ya ordenados de mas a
+# menos contribuciones, asi que la primera pagina es directamente el top.
+CONTRIBUTORS_LIMIT = 10
 
 # Analisis ya calculados, reutilizados durante settings.cache_ttl_seconds.
 _cache: TTLCache[AnalysisResponse] = TTLCache(ttl_seconds=settings.cache_ttl_seconds)
@@ -97,25 +108,6 @@ def _is_contributor_list_too_large(response: httpx.Response) -> bool:
     return "too large" in message
 
 
-def _extract_last_page(link_header: str) -> int | None:
-    """Devuelve el numero de la ultima pagina indicado en la cabecera 'Link'.
-
-    GitHub pagina con una cabecera con este aspecto:
-        <...&page=2>; rel="next", <...&page=87>; rel="last"
-    Nos interesa unicamente el valor de 'page' del enlace rel="last".
-    """
-    for link in link_header.split(","):
-        parts = link.split(";")
-        if len(parts) < 2:
-            continue
-        if not any('rel="last"' in part for part in parts[1:]):
-            continue
-        url = httpx.URL(parts[0].strip().strip("<>"))
-        page = url.params.get("page")
-        return int(page) if page else None
-    return None
-
-
 # --------------------------------------------------------------------------
 # Llamadas a la API (una funcion por endpoint de GitHub)
 # --------------------------------------------------------------------------
@@ -139,39 +131,31 @@ async def _fetch_languages(
     return response.json()
 
 
-async def _fetch_contributors_count(
+async def _fetch_contributors(
     client: httpx.AsyncClient, owner: str, repo: str
-) -> int | None:
-    """Numero de contribuidores, sin recorrer todas las paginas.
+) -> list[Contributor]:
+    """GET /repos/{owner}/{repo}/contributors -> los que mas han contribuido.
 
-    Pedimos un unico contribuidor por pagina: asi el numero de la ultima
-    pagina equivale al total de contribuidores y basta una sola peticion.
-
-    Devuelve None si GitHub se niega a calcularlo. En repositorios con un
-    historial enorme (por ejemplo torvalds/linux) responde 403 con el
-    mensaje "contributor list is too large"; no es un fallo de cuota, asi
-    que preferimos devolver null antes que inventar un numero.
+    A diferencia del conteo, aqui no se pide anon=true: un contribuidor
+    anonimo es un correo sin cuenta de GitHub asociada, no tiene usuario ni
+    avatar ni perfil, y no podria representarse con nuestro modelo.
     """
     response = await client.get(
         f"/repos/{owner}/{repo}/contributors",
-        params={"per_page": 1, "anon": "true"},
+        params={"per_page": CONTRIBUTORS_LIMIT},
     )
 
     # 204 No Content: repositorio vacio, sin commits.
     if response.status_code == 204:
-        return 0
+        return []
 
+    # Historial demasiado grande para que GitHub lo calcule. El conteo devuelve
+    # null en este caso; aqui la lista vacia es la respuesta honesta.
     if response.status_code == 403 and _is_contributor_list_too_large(response):
-        return None
+        return []
 
     _raise_for_status(response)
-
-    last_page = _extract_last_page(response.headers.get("Link", ""))
-    if last_page is not None:
-        return last_page
-
-    # Sin cabecera Link solo hay una pagina: contamos sus elementos (0 o 1).
-    return len(response.json())
+    return _to_contributors(response.json())
 
 
 async def _fetch_latest_release(
@@ -238,6 +222,43 @@ def _to_commit(data: dict) -> Commit:
     )
 
 
+def _tiene_usuario(item: object) -> bool:
+    """True si el contribuidor tiene una cuenta de GitHub identificable."""
+    return isinstance(item, dict) and bool(item.get("login"))
+
+
+def _to_contributors(data: object) -> list[Contributor]:
+    """Traduce la lista de GitHub a nuestro modelo y la ordena.
+
+    GitHub ya la manda de mas a menos contribuciones, pero no lo damos por
+    hecho: el orden es parte de nuestro contrato, asi que lo garantizamos.
+
+    Los contribuidores sin cuenta de GitHub se descartan: no tienen usuario,
+    avatar ni perfil, asi que no hay nada que publicar de ellos. Descartar uno
+    no invalida el resto de la lista.
+
+    Si la respuesta no tiene la forma esperada preferimos un error controlado
+    (que la capa de rutas traduce a 502) antes que un fallo interno.
+    """
+    try:
+        contributors = [
+            Contributor(
+                username=item["login"],
+                contributions=item["contributions"],
+                avatar_url=item["avatar_url"],
+                profile_url=item["html_url"],
+            )
+            for item in data
+            if _tiene_usuario(item)
+        ]
+    except (TypeError, KeyError, ValidationError) as error:
+        raise GitHubError(
+            f"Lista de contribuidores con un formato inesperado: {error}"
+        ) from error
+
+    return sorted(contributors, key=lambda person: person.contributions, reverse=True)
+
+
 def _to_repository(data: dict) -> Repository:
     """Traduce la respuesta de GitHub a nuestro modelo Repository."""
     return Repository(
@@ -284,13 +305,13 @@ async def analyze_repository(owner: str, repo: str) -> AnalysisResponse:
             (
                 repository_data,
                 languages,
-                contributors_count,
+                contributors,
                 latest_release,
                 recent_commits,
             ) = await asyncio.gather(
                 _fetch_repository(client, owner, repo),
                 _fetch_languages(client, owner, repo),
-                _fetch_contributors_count(client, owner, repo),
+                _fetch_contributors(client, owner, repo),
                 _fetch_latest_release(client, owner, repo),
                 _fetch_recent_commits(client, owner, repo),
             )
@@ -302,7 +323,8 @@ async def analyze_repository(owner: str, repo: str) -> AnalysisResponse:
     result = AnalysisResponse(
         repository=_to_repository(repository_data),
         languages=languages,
-        contributors_count=contributors_count,
+        contributors=contributors,
+        contributors_count=len(contributors),
         latest_release=latest_release,
         recent_commits=recent_commits,
     )

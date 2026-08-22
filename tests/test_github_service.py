@@ -6,7 +6,6 @@ import pytest
 from app.services import github
 from tests.conftest import (
     COMMITS_PAYLOAD,
-    CONTRIBUTORS_LINK_HEADER,
     LANGUAGES_PAYLOAD,
     REPO_PAYLOAD,
     is_repository_endpoint,
@@ -28,8 +27,7 @@ async def test_analiza_repositorio_correctamente(fake_github):
     assert result.repository.primary_language == REPO_PAYLOAD["language"]
     assert result.repository.url == REPO_PAYLOAD["html_url"]
     assert result.languages == LANGUAGES_PAYLOAD
-    # El total sale del rel="last" de la cabecera Link, no de contar elementos.
-    assert result.contributors_count == 247
+    assert result.contributors_count == len(result.contributors)
 
 
 async def test_repositorio_inexistente_lanza_not_found(fake_github):
@@ -53,8 +51,8 @@ async def test_cuota_agotada_lanza_rate_limit(fake_github):
         await github.analyze_repository("encode", "httpx")
 
 
-async def test_lista_de_contributors_demasiado_grande_devuelve_null(fake_github):
-    """Un 403 por historial enorme NO es falta de cuota: devolvemos null."""
+async def test_lista_de_contributors_demasiado_grande_no_es_error(fake_github):
+    """Un 403 por historial enorme NO es falta de cuota: devolvemos lista vacia."""
 
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path.endswith("/contributors"):
@@ -69,7 +67,8 @@ async def test_lista_de_contributors_demasiado_grande_devuelve_null(fake_github)
 
     result = await github.analyze_repository("torvalds", "linux")
 
-    assert result.contributors_count is None
+    assert result.contributors == []
+    assert result.contributors_count == 0
     assert result.repository.name == REPO_PAYLOAD["name"]
 
 
@@ -114,20 +113,6 @@ async def test_timeout_lanza_github_unavailable(fake_github):
 
     with pytest.raises(github.GitHubUnavailable):
         await github.analyze_repository("encode", "httpx")
-
-
-@pytest.mark.parametrize(
-    ("link_header", "expected"),
-    [
-        (CONTRIBUTORS_LINK_HEADER, 247),
-        ("", None),
-        ('<https://api.github.com/x?page=2>; rel="next"', None),
-        ('<https://api.github.com/x?per_page=1&page=9>; rel="last"', 9),
-    ],
-)
-def test_extraccion_de_la_ultima_pagina(link_header, expected):
-    """Funcion pura: no necesita simular nada."""
-    assert github._extract_last_page(link_header) == expected
 
 
 async def test_repositorio_sin_releases_devuelve_null(fake_github):

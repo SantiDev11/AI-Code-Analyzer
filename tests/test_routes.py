@@ -1,10 +1,13 @@
 """Tests de la capa HTTP: cada error del servicio debe dar el codigo correcto."""
 
+import re
+from urllib.parse import urljoin
+
 import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from app.main import app
+from app.main import STATIC_DIR, app
 from tests.conftest import successful_handler
 
 
@@ -27,10 +30,20 @@ def test_la_interfaz_web_se_sirve_en_la_raiz(client):
     assert response.headers["content-type"].startswith("text/html")
 
 
-def test_la_hoja_de_estilos_se_sirve(client):
-    response = client.get("/static/estilos.css")
+def test_la_hoja_de_estilos_enlazada_se_sirve(client):
+    """Pide la ruta que enlaza el HTML, no una que demos por supuesta.
+
+    Comprobar directamente /static/style.css no vale: un href relativo se
+    resuelve contra "/" y da 404 aunque el archivo exista bajo /static, asi
+    que el test pasaria con la pagina sirviendose sin estilos.
+    """
+    html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
+    href = re.search(r'<link rel="stylesheet" href="([^"]+)"', html).group(1)
+
+    response = client.get(urljoin("/", href))
 
     assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/css")
 
 
 def test_analyze_devuelve_la_estructura_esperada(client, fake_github):
@@ -43,6 +56,7 @@ def test_analyze_devuelve_la_estructura_esperada(client, fake_github):
     assert set(body) == {
         "repository",
         "languages",
+        "contributors",
         "contributors_count",
         "latest_release",
         "recent_commits",
@@ -64,7 +78,7 @@ def test_analyze_devuelve_la_estructura_esperada(client, fake_github):
         "size_kb",
         "is_archived",
     }
-    assert body["contributors_count"] == 247
+    assert body["contributors_count"] == len(body["contributors"])
 
 
 def test_repositorio_inexistente_devuelve_404(client, fake_github):

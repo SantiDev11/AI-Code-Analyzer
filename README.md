@@ -42,7 +42,15 @@ curl http://127.0.0.1:8000/analyze/encode/httpx
     "Python": 570031,
     "Shell": 2821
   },
-  "contributors_count": 247,
+  "contributors": [
+    {
+      "username": "tomchristie",
+      "contributions": 1042,
+      "avatar_url": "https://avatars.githubusercontent.com/u/647359",
+      "profile_url": "https://github.com/tomchristie"
+    }
+  ],
+  "contributors_count": 1,
   "latest_release": {
     "tag": "0.28.1",
     "name": "Version 0.28.1",
@@ -62,7 +70,7 @@ curl http://127.0.0.1:8000/analyze/encode/httpx
 }
 ```
 
-Los campos `description`, `primary_language`, `license`, `contributors_count` y
+Los campos `description`, `primary_language`, `license` y
 `latest_release` pueden ser `null`. Significa que GitHub no proporciona ese dato
 para ese repositorio; nunca se sustituye por un valor inventado.
 
@@ -173,13 +181,13 @@ paralelo** con `asyncio.gather`:
 |---|---|
 | Datos generales, licencia, topics, tamano | `GET /repos/{owner}/{repo}` |
 | Lenguajes | `GET /repos/{owner}/{repo}/languages` |
-| Numero de contributors | `GET /repos/{owner}/{repo}/contributors?per_page=1` |
+| Contributors | `GET /repos/{owner}/{repo}/contributors?per_page=10` |
 | Ultima release | `GET /repos/{owner}/{repo}/releases/latest` |
 | Commits recientes | `GET /repos/{owner}/{repo}/commits?per_page=5` |
 
-Para contar contributors no se recorren todas las paginas: se pide **un
-contributor por pagina** y se lee el numero de la ultima pagina de la cabecera
-`Link`, con lo que basta una sola peticion.
+De contributors se publican los mas activos, no la lista entera: GitHub ya los
+devuelve ordenados de mas a menos contribuciones, asi que basta la primera
+pagina. `contributors_count` describe cuantos incluye esa lista.
 
 Algunos codigos de GitHub no son errores segun el endpoint:
 
@@ -188,7 +196,7 @@ Algunos codigos de GitHub no son errores segun el endpoint:
 | `/releases/latest` | 404 | El repositorio no tiene releases | `null` |
 | `/commits` | 409 | El repositorio esta vacio | `[]` |
 | `/contributors` | 204 | El repositorio esta vacio | `0` |
-| `/contributors` | 403 | Historial demasiado grande para contarlo | `null` |
+| `/contributors` | 403 | Historial demasiado grande para listarlo | `[]` |
 
 Por eso cada uno se trata por separado antes de la comprobacion general de
 errores: un 404 en `/releases/latest` no significa que el repositorio no exista.

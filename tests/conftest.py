@@ -51,11 +51,21 @@ COMMITS_PAYLOAD = [
     }
 ]
 
-CONTRIBUTORS_LINK_HEADER = (
-    '<https://api.github.com/repositories/1/contributors?per_page=1&page=2>; rel="next", '
-    '<https://api.github.com/repositories/1/contributors?per_page=1&page=247>; rel="last"'
-)
-
+# Respuesta de GET /contributors, recortada a los campos que usamos.
+CONTRIBUTORS_PAYLOAD = [
+    {
+        "login": "tomchristie",
+        "contributions": 1042,
+        "avatar_url": "https://avatars.githubusercontent.com/u/647359",
+        "html_url": "https://github.com/tomchristie",
+    },
+    {
+        "login": "florimondmanca",
+        "contributions": 318,
+        "avatar_url": "https://avatars.githubusercontent.com/u/15911462",
+        "html_url": "https://github.com/florimondmanca",
+    },
+]
 
 @pytest.fixture(autouse=True)
 def clean_cache():
@@ -112,8 +122,6 @@ def successful_handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json=LANGUAGES_PAYLOAD)
 
     if path.endswith("/contributors"):
-        return httpx.Response(
-            200, json=[{"login": "alguien"}], headers={"Link": CONTRIBUTORS_LINK_HEADER}
-        )
+        return httpx.Response(200, json=CONTRIBUTORS_PAYLOAD)
 
     return httpx.Response(200, json=REPO_PAYLOAD)

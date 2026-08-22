@@ -38,6 +38,20 @@ class Repository(BaseModel):
     )
 
 
+class Contributor(BaseModel):
+    """Una persona que ha contribuido al repositorio.
+
+    Solo exponemos estos cuatro datos: GitHub devuelve una veintena de campos
+    por contribuidor (node_id, gravatar_id, urls internas de la API...) que no
+    aportan nada a quien consume nuestra respuesta.
+    """
+
+    username: str = Field(description="Nombre de usuario en GitHub")
+    contributions: int = Field(description="Numero de commits atribuidos")
+    avatar_url: str = Field(description="URL de la imagen de perfil")
+    profile_url: str = Field(description="URL del perfil publico en GitHub")
+
+
 class Release(BaseModel):
     """Ultima version publicada del repositorio."""
 
@@ -64,11 +78,14 @@ class AnalysisResponse(BaseModel):
     languages: dict[str, int] = Field(
         description="Lenguajes detectados y bytes de codigo de cada uno"
     )
-    contributors_count: int | None = Field(
+    contributors: list[Contributor] = Field(
         description=(
-            "Numero total de contribuidores, o null si GitHub se niega a "
-            "calcularlo (ocurre en repositorios con un historial enorme)"
+            "Principales contribuidores, del que mas ha aportado al que menos. "
+            "Es una seleccion de los mas activos, no la lista completa"
         )
+    )
+    contributors_count: int = Field(
+        description="Cuantos contribuidores incluye la lista `contributors`"
     )
     latest_release: Release | None = Field(
         description="Ultima version publicada, o null si el repositorio no tiene"
@@ -101,7 +118,15 @@ class AnalysisResponse(BaseModel):
                     "is_archived": False,
                 },
                 "languages": {"Python": 1245678, "HTML": 4321},
-                "contributors_count": 654,
+                "contributors": [
+                    {
+                        "username": "tiangolo",
+                        "contributions": 1042,
+                        "avatar_url": "https://avatars.githubusercontent.com/u/1326112",
+                        "profile_url": "https://github.com/tiangolo",
+                    }
+                ],
+                "contributors_count": 1,
                 "latest_release": {
                     "tag": "0.115.0",
                     "name": "0.115.0",
