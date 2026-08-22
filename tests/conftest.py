@@ -67,6 +67,7 @@ CONTRIBUTORS_PAYLOAD = [
     },
 ]
 
+
 @pytest.fixture(autouse=True)
 def clean_cache():
     """Vacia la cache antes de cada test.
