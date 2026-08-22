@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI-Code-Analyzer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Primer elemento enfocable: permite saltar la cabecera con el teclado. -->
+    <a class="salto-al-contenido" href="#contenido">Saltar al contenido</a>
+
+    <header class="cabecera">
+        <!-- div de layout: la cabecera ocupa todo el ancho y este contenedor
+             centra su contenido. No hay etiqueta semantica para eso. -->
+        <div class="contenedor">
+            <h1 class="cabecera__titulo">AI-Code-Analyzer</h1>
+            <p class="cabecera__lema">
+                Analiza cualquier repositorio publico de GitHub
+            </p>
+        </div>
+    </header>
+
+    <main class="contenedor" id="contenido">
+        <section class="buscador" aria-labelledby="buscador-titulo">
+            <h2 class="buscador__titulo" id="buscador-titulo">
+                Analizar un repositorio
+            </h2>
+
+            <!-- Sin atributo action: el envio se conectara con la API al
+                 construir la seccion de resultados. -->
+            <form class="buscador__formulario">
+                <label class="buscador__etiqueta" for="repositorio">
+                    Repositorio
+                </label>
+                <input
+                    class="buscador__campo"
+                    id="repositorio"
+                    name="repositorio"
+                    type="text"
+                    placeholder="encode/httpx"
+                    pattern="[^/\s]+/[^/\s]+"
+                    aria-describedby="buscador-ayuda"
+                    autocomplete="off"
+                    required>
+                <p class="buscador__ayuda" id="buscador-ayuda">
+                    Formato: propietario/repositorio
+                </p>
+                <button class="buscador__boton" type="submit">Analizar</button>
+            </form>
+        </section>
+    </main>
+
+    <footer class="pie">
+        <div class="contenedor">
+            <p>
+                Datos obtenidos de la
+                <a href="https://docs.github.com/rest">GitHub REST API</a>.
+            </p>
+        </div>
+    </footer>
+</body>
+</html>

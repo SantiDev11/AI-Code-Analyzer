@@ -1,0 +1,155 @@
+/* Estilos de AI-Code-Analyzer.
+   Las clases describen la funcion del elemento, no su posicion en el arbol:
+   asi el marcado puede cambiar sin romper el diseno. */
+
+:root {
+    --color-fondo: #f6f8fa;
+    --color-superficie: #ffffff;
+    --color-texto: #1f2328;
+    --color-texto-suave: #59636e;
+    --color-borde: #d1d9e0;
+    --color-acento: #0969da;
+    --radio: 6px;
+    --ancho-maximo: 48rem;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5;
+    color: var(--color-texto);
+    background-color: var(--color-fondo);
+}
+
+/* Contenedor de ancho limitado, reutilizado por cabecera, main y pie. */
+.contenedor {
+    width: 100%;
+    max-width: var(--ancho-maximo);
+    margin-inline: auto;
+    padding-inline: 1.25rem;
+}
+
+/* Visible solo cuando recibe el foco con el teclado. Se recorta en vez de
+   ocultarse con display:none, que tambien lo esconderia al lector de pantalla. */
+.salto-al-contenido {
+    position: absolute;
+    left: -9999px;
+    padding: 0.75rem 1rem;
+    background-color: var(--color-acento);
+    color: #ffffff;
+}
+
+.salto-al-contenido:focus {
+    left: 1rem;
+    top: 1rem;
+    z-index: 1;
+}
+
+/* Cabecera */
+
+.cabecera {
+    padding-block: 2.5rem 2rem;
+    background-color: var(--color-superficie);
+    border-bottom: 1px solid var(--color-borde);
+}
+
+.cabecera__titulo {
+    margin: 0;
+    font-size: 1.875rem;
+    letter-spacing: -0.02em;
+}
+
+.cabecera__lema {
+    margin: 0.375rem 0 0;
+    color: var(--color-texto-suave);
+}
+
+/* Buscador */
+
+.buscador {
+    margin-block: 2rem;
+    padding: 1.5rem;
+    background-color: var(--color-superficie);
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio);
+}
+
+.buscador__titulo {
+    margin: 0 0 1rem;
+    font-size: 1.125rem;
+}
+
+.buscador__formulario {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.buscador__etiqueta {
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.buscador__campo {
+    padding: 0.625rem 0.75rem;
+    font: inherit;
+    color: inherit;
+    background-color: var(--color-fondo);
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio);
+}
+
+.buscador__campo:focus-visible {
+    outline: 2px solid var(--color-acento);
+    outline-offset: 1px;
+}
+
+.buscador__ayuda {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--color-texto-suave);
+}
+
+.buscador__boton {
+    justify-self: start;
+    margin-top: 0.25rem;
+    padding: 0.625rem 1.25rem;
+    font: inherit;
+    font-weight: 600;
+    color: #ffffff;
+    background-color: var(--color-acento);
+    border: none;
+    border-radius: var(--radio);
+    cursor: pointer;
+}
+
+.buscador__boton:hover {
+    background-color: #0757b8;
+}
+
+.buscador__boton:focus-visible {
+    outline: 2px solid var(--color-texto);
+    outline-offset: 2px;
+}
+
+/* Pie */
+
+.pie {
+    padding-block: 1.5rem;
+    border-top: 1px solid var(--color-borde);
+    color: var(--color-texto-suave);
+    font-size: 0.875rem;
+}
+
+.pie p {
+    margin: 0;
+}
+
+a {
+    color: var(--color-acento);
+}

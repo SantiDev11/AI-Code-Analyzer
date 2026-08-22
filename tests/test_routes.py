@@ -20,6 +20,19 @@ def test_health(client):
     assert response.json() == {"status": "ok"}
 
 
+def test_la_interfaz_web_se_sirve_en_la_raiz(client):
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")
+
+
+def test_la_hoja_de_estilos_se_sirve(client):
+    response = client.get("/static/estilos.css")
+
+    assert response.status_code == 200
+
+
 def test_analyze_devuelve_la_estructura_esperada(client, fake_github):
     fake_github(successful_handler)
 
