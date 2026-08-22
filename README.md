@@ -13,6 +13,7 @@ a traves de la GitHub REST API.
 | `GET` | `/analyze/{owner}/{repo}` | Analiza un repositorio publico |
 | `GET` | `/analyze/{owner}/{repo}?commits=N` | Igual, pidiendo N commits recientes |
 | `GET` | `/analyze/{owner}/{repo}?issues=N` | Igual, analizando N issues |
+| `GET` | `/analyze/{owner}/{repo}?pulls=N` | Igual, analizando N pull requests |
 | `GET` | `/health` | Comprueba que el servicio esta vivo |
 | `GET` | `/docs` | Documentacion interactiva (Swagger UI) |
 
@@ -176,7 +177,7 @@ aislada y cambiar una capa sin tocar las demas.
 
 ## Como funciona por dentro
 
-Un analisis necesita seis endpoints distintos de GitHub, que se consultan **en
+Un analisis necesita siete endpoints distintos de GitHub, que se consultan **en
 paralelo** con `asyncio.gather`:
 
 | Dato | Endpoint de GitHub |
@@ -187,6 +188,7 @@ paralelo** con `asyncio.gather`:
 | Ultima release | `GET /repos/{owner}/{repo}/releases/latest` |
 | Commits recientes | `GET /repos/{owner}/{repo}/commits?per_page=10` |
 | Issues | `GET /repos/{owner}/{repo}/issues?per_page=10&state=all` |
+| Pull requests | `GET /repos/{owner}/{repo}/pulls?per_page=10&state=all&sort=created&direction=desc` |
 
 De issues se analizan **10** por defecto, ajustables con `issues` (1-100).
 GitHub sirve los pull requests por el mismo endpoint que los issues, asi que se
@@ -197,6 +199,24 @@ calculan despues de ese filtro, sobre los issues que de verdad analizamos.
 Cuidado con no confundir `repository.open_issues`, que es el contador de GitHub
 e **incluye pull requests**, con `open_issues_count`, que cuenta solo issues
 reales de la muestra analizada.
+
+De pull requests se analizan **10** por defecto, ajustables con `pulls`
+(1-100). Se piden a `/pulls` y no a `/issues` porque solo ese endpoint trae la
+fecha de merge y las ramas de origen y destino.
+
+Ojo con los contadores, porque GitHub solo tiene dos estados (`open` y
+`closed`) y el merge es otra cosa distinta:
+
+| Contador | Como se calcula |
+|---|---|
+| `open_pull_requests_count` | `state == "open"` |
+| `closed_pull_requests_count` | `state == "closed"`, **mergeados incluidos** |
+| `merged_pull_requests_count` | `merged_at` tiene fecha |
+
+Un pull request mergeado esta cerrado, asi que suma en los dos ultimos a la
+vez: `merged` no es un tercer estado, sino algo que le pasa a uno cerrado. El
+campo `merged` de GitHub no sirve aqui, porque solo aparece al pedir un pull
+request de uno en uno; en el listado el unico rastro del merge es `merged_at`.
 
 De commits recientes se devuelven **10** por defecto. La cantidad se ajusta con
 el parametro `commits` (entre 1 y 100, el maximo que sirve GitHub por pagina);

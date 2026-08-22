@@ -33,16 +33,26 @@ async def analyze(
         le=github.MAX_ISSUES,
         description="Cuantos issues analizar (los pull requests no cuentan)",
     ),
+    pulls: int = Query(
+        default=github.PULL_REQUESTS_LIMIT,
+        ge=1,
+        le=github.MAX_PULL_REQUESTS,
+        description="Cuantos pull requests analizar",
+    ),
 ) -> AnalysisResponse:
     """Devuelve datos reales del repositorio consultados en la GitHub REST API.
 
-    FastAPI valida `commits` e `issues` contra los limites declarados y
-    responde 422 por su cuenta si el valor se sale del rango, sin que haya que
-    comprobarlo aqui.
+    FastAPI valida `commits`, `issues` y `pulls` contra los limites declarados
+    y responde 422 por su cuenta si el valor se sale del rango, sin que haya
+    que comprobarlo aqui.
     """
     try:
         return await github.analyze_repository(
-            owner, repo, commits_limit=commits, issues_limit=issues
+            owner,
+            repo,
+            commits_limit=commits,
+            issues_limit=issues,
+            pulls_limit=pulls,
         )
 
     except github.RepositoryNotFound as error:

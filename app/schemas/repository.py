@@ -90,6 +90,36 @@ class Commit(BaseModel):
     url: str = Field(description="URL del commit en GitHub")
 
 
+class PullRequest(BaseModel):
+    """Un pull request del repositorio.
+
+    Viene de /pulls, no de /issues: aunque GitHub sirva los pull requests por
+    los dos sitios, solo este endpoint trae la fecha de merge y las ramas.
+
+    `state` y `merged_at` son dos ejes independientes, no tres estados: un
+    pull request mergeado esta cerrado y ademas tiene fecha de merge.
+    """
+
+    number: int = Field(description="Numero del pull request dentro del repositorio")
+    title: str = Field(description="Titulo del pull request")
+    state: Literal["open", "closed"] = Field(description="Si esta abierto o cerrado")
+    author: str | None = Field(
+        description="Quien lo abrio, o null si la cuenta ya no existe"
+    )
+    created_at: datetime = Field(description="Fecha de apertura (UTC)")
+    updated_at: datetime = Field(description="Fecha de la ultima actualizacion (UTC)")
+    merged_at: datetime | None = Field(
+        description="Fecha del merge (UTC), o null si no se llego a mergear"
+    )
+    source_branch: str | None = Field(
+        description="Rama de origen, o null si GitHub ya no la informa"
+    )
+    target_branch: str | None = Field(
+        description="Rama de destino, o null si GitHub ya no la informa"
+    )
+    url: str = Field(description="URL del pull request en GitHub")
+
+
 class AnalysisResponse(BaseModel):
     """Respuesta completa del endpoint GET /analyze/{owner}/{repo}."""
 
@@ -121,6 +151,27 @@ class AnalysisResponse(BaseModel):
     issues_count: int = Field(description="Cuantos issues incluye la lista `issues`")
     open_issues_count: int = Field(description="Cuantos de esos issues estan abiertos")
     closed_issues_count: int = Field(description="Cuantos de esos issues estan cerrados")
+    pull_requests: list[PullRequest] = Field(
+        description=(
+            "Pull requests analizados, del mas reciente al mas antiguo. Es una "
+            "muestra reciente, no el historial completo del repositorio"
+        )
+    )
+    pull_requests_count: int = Field(
+        description="Cuantos pull requests incluye la lista `pull_requests`"
+    )
+    open_pull_requests_count: int = Field(
+        description="Cuantos de esos pull requests siguen abiertos"
+    )
+    closed_pull_requests_count: int = Field(
+        description=(
+            "Cuantos de esos pull requests estan cerrados. Los mergeados "
+            "tambien estan cerrados, asi que cuentan aqui"
+        )
+    )
+    merged_pull_requests_count: int = Field(
+        description="Cuantos de esos pull requests se llegaron a mergear"
+    )
     cached: bool = Field(
         default=False,
         description="True si la respuesta viene de la cache y no de GitHub",
@@ -184,6 +235,24 @@ class AnalysisResponse(BaseModel):
                 "issues_count": 1,
                 "open_issues_count": 1,
                 "closed_issues_count": 0,
+                "pull_requests": [
+                    {
+                        "number": 12,
+                        "title": "Improve error handling",
+                        "state": "closed",
+                        "author": "SantiDev11",
+                        "created_at": "2026-08-20T10:00:00Z",
+                        "updated_at": "2026-08-21T10:00:00Z",
+                        "merged_at": "2026-08-21T09:30:00Z",
+                        "source_branch": "fix/error-handling",
+                        "target_branch": "main",
+                        "url": "https://github.com/fastapi/fastapi/pull/12",
+                    }
+                ],
+                "pull_requests_count": 1,
+                "open_pull_requests_count": 0,
+                "closed_pull_requests_count": 1,
+                "merged_pull_requests_count": 1,
                 "cached": False,
             }
         }

@@ -101,6 +101,49 @@ CONTRIBUTORS_PAYLOAD = [
 ]
 
 
+# Respuesta de GET /pulls. El segundo esta cerrado y mergeado (merged_at con
+# fecha) y el tercero cerrado sin mergear (merged_at null): en el listado de
+# GitHub esa fecha es el unico dato que distingue un caso del otro.
+PULLS_PAYLOAD = [
+    {
+        "number": 42,
+        "title": "Add issue analysis",
+        "state": "open",
+        "user": {"login": "SantiDev11"},
+        "created_at": "2026-08-22T09:00:00Z",
+        "updated_at": "2026-08-22T11:00:00Z",
+        "merged_at": None,
+        "head": {"ref": "feat/issues"},
+        "base": {"ref": "main"},
+        "html_url": "https://github.com/encode/httpx/pull/42",
+    },
+    {
+        "number": 40,
+        "title": "Fix timeout handling",
+        "state": "closed",
+        "user": {"login": "tomchristie"},
+        "created_at": "2026-08-20T10:00:00Z",
+        "updated_at": "2026-08-21T10:00:00Z",
+        "merged_at": "2026-08-21T09:30:00Z",
+        "head": {"ref": "fix/timeout"},
+        "base": {"ref": "main"},
+        "html_url": "https://github.com/encode/httpx/pull/40",
+    },
+    {
+        "number": 38,
+        "title": "Experimento descartado",
+        "state": "closed",
+        "user": {"login": "florimondmanca"},
+        "created_at": "2026-08-18T08:00:00Z",
+        "updated_at": "2026-08-19T08:00:00Z",
+        "merged_at": None,
+        "head": {"ref": "spike/idea"},
+        "base": {"ref": "main"},
+        "html_url": "https://github.com/encode/httpx/pull/38",
+    },
+]
+
+
 @pytest.fixture(autouse=True)
 def clean_cache():
     """Vacia la cache antes de cada test.
@@ -154,6 +197,9 @@ def successful_handler(request: httpx.Request) -> httpx.Response:
 
     if path.endswith("/issues"):
         return httpx.Response(200, json=ISSUES_PAYLOAD)
+
+    if path.endswith("/pulls"):
+        return httpx.Response(200, json=PULLS_PAYLOAD)
 
     if path.endswith("/languages"):
         return httpx.Response(200, json=LANGUAGES_PAYLOAD)

@@ -16,6 +16,7 @@ from app.schemas.repository import (
     Commit,
     Contributor,
     Issue,
+    PullRequest,
     Release,
     Repository,
 )
@@ -34,6 +35,11 @@ MAX_RECENT_COMMITS = 100
 # Cuantos issues se analizan si no se pide otra cosa, y el tope admitido.
 ISSUES_LIMIT = 10
 MAX_ISSUES = 100
+
+# Lo mismo para los pull requests. Comparten tope con lo demas por la misma
+# razon: GitHub no sirve mas de 100 por pagina.
+PULL_REQUESTS_LIMIT = 10
+MAX_PULL_REQUESTS = 100
 
 # Cuantos contribuidores se incluyen. GitHub los devuelve ya ordenados de mas a
 # menos contribuciones, asi que la primera pagina es directamente el top.
@@ -216,6 +222,38 @@ async def _fetch_issues(
     return _to_issues(response.json())
 
 
+async def _fetch_pull_requests(
+    client: httpx.AsyncClient, owner: str, repo: str, limit: int
+) -> list[PullRequest]:
+    """GET /repos/{owner}/{repo}/pulls -> pull requests abiertos y cerrados.
+
+    Se consulta este endpoint y no /issues, aunque GitHub sirva los pull
+    requests por los dos: solo aqui vienen la fecha de merge y las ramas.
+
+    state=all hace falta por lo mismo que en los issues: por defecto GitHub
+    devuelve solo los abiertos, y sin los cerrados no habria nada que contar.
+    sort y direction piden ya en el servidor el orden que prometemos, para no
+    traernos los diez mas antiguos y ordenarlos despues.
+
+    Aqui no hay excepcion para el 404, a diferencia de /issues: los issues se
+    pueden desactivar en un repositorio, los pull requests no. Un repositorio
+    sin ninguno responde 200 con lista vacia, asi que un 404 significa de
+    verdad que el repositorio no existe.
+    """
+    response = await client.get(
+        f"/repos/{owner}/{repo}/pulls",
+        params={
+            "per_page": limit,
+            "state": "all",
+            "sort": "created",
+            "direction": "desc",
+        },
+    )
+
+    _raise_for_status(response)
+    return _to_pull_requests(response.json())
+
+
 async def _fetch_recent_commits(
     client: httpx.AsyncClient, owner: str, repo: str, limit: int
 ) -> list[Commit]:
@@ -301,6 +339,47 @@ def _to_issues(data: object) -> list[Issue]:
         ) from error
 
 
+def _to_pull_requests(data: object) -> list[PullRequest]:
+    """Traduce los pull requests de GitHub, del mas reciente al mas antiguo.
+
+    GitHub ya los manda en ese orden porque se lo hemos pedido, pero no lo
+    damos por hecho: el orden es parte de nuestro contrato, igual que en los
+    contribuidores, asi que lo garantizamos aqui.
+
+    Los campos que GitHub puede dejar sin informar (autor, ramas, fecha de
+    merge) se leen con cuidado: que a un pull request le falte uno no puede
+    tumbar el analisis entero.
+    """
+    try:
+        pull_requests = [
+            PullRequest(
+                number=item["number"],
+                title=item["title"],
+                state=item["state"],
+                # "user" es quien lo abrio; null si la cuenta fue borrada.
+                author=(item.get("user") or {}).get("login"),
+                created_at=item["created_at"],
+                updated_at=item["updated_at"],
+                # En el listado de GitHub esta fecha es el unico rastro del
+                # merge: el campo "merged" solo existe pidiendo el pull
+                # request de uno en uno.
+                merged_at=item.get("merged_at"),
+                # head.repo llega null si el fork de origen se borro, pero
+                # head.ref sobrevive. Aun asi lo leemos sin dar nada por hecho.
+                source_branch=(item.get("head") or {}).get("ref"),
+                target_branch=(item.get("base") or {}).get("ref"),
+                url=item["html_url"],
+            )
+            for item in data
+        ]
+    except (TypeError, KeyError, ValidationError) as error:
+        raise GitHubError(
+            f"Lista de pull requests con un formato inesperado: {error}"
+        ) from error
+
+    return sorted(pull_requests, key=lambda pr: pr.created_at, reverse=True)
+
+
 def _to_commits(data: object) -> list[Commit]:
     """Traduce la lista de commits de GitHub.
 
@@ -374,7 +453,7 @@ def _to_repository(data: dict) -> Repository:
 
 
 def _cache_key(
-    owner: str, repo: str, commits_limit: int, issues_limit: int
+    owner: str, repo: str, commits_limit: int, issues_limit: int, pulls_limit: int
 ) -> str:
     """Clave de cache. GitHub no distingue mayusculas en owner ni en repo.
 
@@ -384,7 +463,7 @@ def _cache_key(
     """
     return (
         f"{owner.lower()}/{repo.lower()}"
-        f"#commits={commits_limit}#issues={issues_limit}"
+        f"#commits={commits_limit}#issues={issues_limit}#pulls={pulls_limit}"
     )
 
 
@@ -393,16 +472,17 @@ async def analyze_repository(
     repo: str,
     commits_limit: int = RECENT_COMMITS_LIMIT,
     issues_limit: int = ISSUES_LIMIT,
+    pulls_limit: int = PULL_REQUESTS_LIMIT,
 ) -> AnalysisResponse:
     """Devuelve el analisis completo del repositorio.
 
     Si el mismo repositorio se consulto hace poco, se reutiliza el resultado
     guardado en cache y no se llama a GitHub.
 
-    Las seis peticiones son independientes entre si, por lo que se lanzan en
-    paralelo: el tiempo total es el de la mas lenta, no la suma de las seis.
+    Las siete peticiones son independientes entre si, por lo que se lanzan en
+    paralelo: el tiempo total es el de la mas lenta, no la suma de las siete.
     """
-    key = _cache_key(owner, repo, commits_limit, issues_limit)
+    key = _cache_key(owner, repo, commits_limit, issues_limit, pulls_limit)
 
     cached_result = _cache.get(key)
     if cached_result is not None:
@@ -418,6 +498,7 @@ async def analyze_repository(
                 latest_release,
                 recent_commits,
                 issues,
+                pull_requests,
             ) = await asyncio.gather(
                 _fetch_repository(client, owner, repo),
                 _fetch_languages(client, owner, repo),
@@ -425,6 +506,7 @@ async def analyze_repository(
                 _fetch_latest_release(client, owner, repo),
                 _fetch_recent_commits(client, owner, repo, commits_limit),
                 _fetch_issues(client, owner, repo, issues_limit),
+                _fetch_pull_requests(client, owner, repo, pulls_limit),
             )
         except httpx.TimeoutException as error:
             raise GitHubUnavailable("GitHub ha tardado demasiado en responder") from error
@@ -444,6 +526,21 @@ async def analyze_repository(
         issues_count=len(issues),
         open_issues_count=sum(1 for issue in issues if issue.state == "open"),
         closed_issues_count=sum(1 for issue in issues if issue.state == "closed"),
+        pull_requests=pull_requests,
+        # Abierto y cerrado son excluyentes; mergeado no es un tercer estado,
+        # sino algo que le pasa a uno cerrado. Por eso un pull request
+        # mergeado suma en los cerrados y en los mergeados a la vez, y por eso
+        # el merge se mira por merged_at y no por state.
+        pull_requests_count=len(pull_requests),
+        open_pull_requests_count=sum(
+            1 for pr in pull_requests if pr.state == "open"
+        ),
+        closed_pull_requests_count=sum(
+            1 for pr in pull_requests if pr.state == "closed"
+        ),
+        merged_pull_requests_count=sum(
+            1 for pr in pull_requests if pr.merged_at is not None
+        ),
     )
     _cache.set(key, result)
     return result

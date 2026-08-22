@@ -64,6 +64,11 @@ def test_analyze_devuelve_la_estructura_esperada(client, fake_github):
         "issues_count",
         "open_issues_count",
         "closed_issues_count",
+        "pull_requests",
+        "pull_requests_count",
+        "open_pull_requests_count",
+        "closed_pull_requests_count",
+        "merged_pull_requests_count",
         "cached",
     }
     assert set(body["repository"]) == {
