@@ -27,7 +27,14 @@ def test_analyze_devuelve_la_estructura_esperada(client, fake_github):
 
     assert response.status_code == 200
     body = response.json()
-    assert set(body) == {"repository", "languages", "contributors_count", "cached"}
+    assert set(body) == {
+        "repository",
+        "languages",
+        "contributors_count",
+        "latest_release",
+        "recent_commits",
+        "cached",
+    }
     assert set(body["repository"]) == {
         "name",
         "description",
@@ -38,6 +45,10 @@ def test_analyze_devuelve_la_estructura_esperada(client, fake_github):
         "updated_at",
         "primary_language",
         "url",
+        "license",
+        "topics",
+        "size_kb",
+        "is_archived",
     }
     assert body["contributors_count"] == 247
 

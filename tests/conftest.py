@@ -23,9 +23,32 @@ REPO_PAYLOAD = {
     "updated_at": "2024-05-02T08:12:44Z",
     "language": "Python",
     "html_url": "https://github.com/encode/httpx",
+    "license": {"spdx_id": "BSD-3-Clause"},
+    "topics": ["http", "asyncio"],
+    "size": 8594,
+    "archived": False,
 }
 
 LANGUAGES_PAYLOAD = {"Python": 570031, "Shell": 2821}
+
+RELEASE_PAYLOAD = {
+    "tag_name": "0.28.1",
+    "name": "Version 0.28.1",
+    "published_at": "2024-12-06T15:36:24Z",
+    "html_url": "https://github.com/encode/httpx/releases/tag/0.28.1",
+}
+
+COMMITS_PAYLOAD = [
+    {
+        "sha": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254",
+        "html_url": "https://github.com/encode/httpx/commit/b5addb6",
+        "author": {"login": "musicinmybrain"},
+        "commit": {
+            "message": "Adapt test for chardet 6.0",
+            "author": {"name": "Ben Beasley", "date": "2026-02-23T10:40:42Z"},
+        },
+    }
+]
 
 CONTRIBUTORS_LINK_HEADER = (
     '<https://api.github.com/repositories/1/contributors?per_page=1&page=2>; rel="next", '
@@ -65,9 +88,24 @@ def fake_github(monkeypatch) -> Callable[[Callable], None]:
     return install
 
 
+def is_repository_endpoint(request: httpx.Request) -> bool:
+    """True solo para /repos/{owner}/{repo}, no para sus sub-recursos.
+
+    Util en los tests que quieren cambiar los datos del repositorio y dejar
+    que el resto de endpoints respondan con normalidad.
+    """
+    return len(request.url.path.strip("/").split("/")) == 3
+
+
 def successful_handler(request: httpx.Request) -> httpx.Response:
     """Simula un repositorio que existe y responde correctamente a todo."""
     path = request.url.path
+
+    if path.endswith("/releases/latest"):
+        return httpx.Response(200, json=RELEASE_PAYLOAD)
+
+    if path.endswith("/commits"):
+        return httpx.Response(200, json=COMMITS_PAYLOAD)
 
     if path.endswith("/languages"):
         return httpx.Response(200, json=LANGUAGES_PAYLOAD)

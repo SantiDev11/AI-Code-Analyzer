@@ -10,11 +10,14 @@ import asyncio
 import httpx
 
 from app.config import settings
-from app.schemas.repository import AnalysisResponse, Repository
+from app.schemas.repository import AnalysisResponse, Commit, Release, Repository
 from app.services.cache import TTLCache
 
 API_BASE = "https://api.github.com"
 TIMEOUT = httpx.Timeout(10.0)
+
+# Cuantos commits recientes se incluyen en el analisis.
+RECENT_COMMITS_LIMIT = 5
 
 # Analisis ya calculados, reutilizados durante settings.cache_ttl_seconds.
 _cache: TTLCache[AnalysisResponse] = TTLCache(ttl_seconds=settings.cache_ttl_seconds)
@@ -171,9 +174,68 @@ async def _fetch_contributors_count(
     return len(response.json())
 
 
+async def _fetch_latest_release(
+    client: httpx.AsyncClient, owner: str, repo: str
+) -> Release | None:
+    """GET /repos/{owner}/{repo}/releases/latest -> ultima version publicada.
+
+    Devuelve None si el repositorio no tiene ninguna release. Aqui un 404 NO
+    significa que el repositorio no exista: significa que no hay releases, asi
+    que se trata antes de la comprobacion general de errores.
+    """
+    response = await client.get(f"/repos/{owner}/{repo}/releases/latest")
+
+    if response.status_code == 404:
+        return None
+
+    _raise_for_status(response)
+    data = response.json()
+    return Release(
+        tag=data["tag_name"],
+        name=data["name"],
+        published_at=data["published_at"],
+        url=data["html_url"],
+    )
+
+
+async def _fetch_recent_commits(
+    client: httpx.AsyncClient, owner: str, repo: str
+) -> list[Commit]:
+    """GET /repos/{owner}/{repo}/commits -> ultimos commits de la rama principal.
+
+    Un repositorio sin commits responde 409 Conflict; en ese caso la lista
+    correcta es la vacia, no un error.
+    """
+    response = await client.get(
+        f"/repos/{owner}/{repo}/commits", params={"per_page": RECENT_COMMITS_LIMIT}
+    )
+
+    if response.status_code == 409:
+        return []
+
+    _raise_for_status(response)
+    return [_to_commit(item) for item in response.json()]
+
+
 # --------------------------------------------------------------------------
 # API publica del servicio
 # --------------------------------------------------------------------------
+
+
+def _to_commit(data: dict) -> Commit:
+    """Traduce un commit de GitHub a nuestro modelo Commit."""
+    commit = data["commit"]
+    # data["author"] es la cuenta de GitHub y puede ser null si el correo del
+    # commit no esta asociado a ningun usuario; commit["author"]["name"] es el
+    # nombre que quedo escrito en el propio commit y siempre existe.
+    author = data.get("author") or {}
+    return Commit(
+        sha=data["sha"][:7],
+        message=commit["message"].splitlines()[0],
+        author=author.get("login") or commit["author"]["name"],
+        date=commit["author"]["date"],
+        url=data["html_url"],
+    )
 
 
 def _to_repository(data: dict) -> Repository:
@@ -188,6 +250,10 @@ def _to_repository(data: dict) -> Repository:
         updated_at=data["updated_at"],
         primary_language=data["language"],
         url=data["html_url"],
+        license=(data["license"] or {}).get("spdx_id"),
+        topics=data.get("topics", []),
+        size_kb=data["size"],
+        is_archived=data["archived"],
     )
 
 
@@ -202,8 +268,8 @@ async def analyze_repository(owner: str, repo: str) -> AnalysisResponse:
     Si el mismo repositorio se consulto hace poco, se reutiliza el resultado
     guardado en cache y no se llama a GitHub.
 
-    Las tres peticiones son independientes entre si, por lo que se lanzan en
-    paralelo: el tiempo total es el de la mas lenta, no la suma de las tres.
+    Las cinco peticiones son independientes entre si, por lo que se lanzan en
+    paralelo: el tiempo total es el de la mas lenta, no la suma de las cinco.
     """
     key = _cache_key(owner, repo)
 
@@ -214,10 +280,18 @@ async def analyze_repository(owner: str, repo: str) -> AnalysisResponse:
 
     async with _create_client() as client:
         try:
-            repository_data, languages, contributors_count = await asyncio.gather(
+            (
+                repository_data,
+                languages,
+                contributors_count,
+                latest_release,
+                recent_commits,
+            ) = await asyncio.gather(
                 _fetch_repository(client, owner, repo),
                 _fetch_languages(client, owner, repo),
                 _fetch_contributors_count(client, owner, repo),
+                _fetch_latest_release(client, owner, repo),
+                _fetch_recent_commits(client, owner, repo),
             )
         except httpx.TimeoutException as error:
             raise GitHubUnavailable("GitHub ha tardado demasiado en responder") from error
@@ -228,6 +302,8 @@ async def analyze_repository(owner: str, repo: str) -> AnalysisResponse:
         repository=_to_repository(repository_data),
         languages=languages,
         contributors_count=contributors_count,
+        latest_release=latest_release,
+        recent_commits=recent_commits,
     )
     _cache.set(key, result)
     return result

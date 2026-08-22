@@ -31,20 +31,39 @@ curl http://127.0.0.1:8000/analyze/encode/httpx
     "created_at": "2019-04-04T12:27:00Z",
     "updated_at": "2026-08-22T15:17:06Z",
     "primary_language": "Python",
-    "url": "https://github.com/encode/httpx"
+    "url": "https://github.com/encode/httpx",
+    "license": "BSD-3-Clause",
+    "topics": ["asyncio", "http", "python", "trio"],
+    "size_kb": 8594,
+    "is_archived": false
   },
   "languages": {
     "Python": 570031,
     "Shell": 2821
   },
   "contributors_count": 247,
+  "latest_release": {
+    "tag": "0.28.1",
+    "name": "Version 0.28.1",
+    "published_at": "2024-12-06T15:36:24Z",
+    "url": "https://github.com/encode/httpx/releases/tag/0.28.1"
+  },
+  "recent_commits": [
+    {
+      "sha": "b5addb6",
+      "message": "Adapt test_response_decode_text_using_autodetect for chardet 6.0",
+      "author": "musicinmybrain",
+      "date": "2026-02-23T10:40:42Z",
+      "url": "https://github.com/encode/httpx/commit/b5addb6..."
+    }
+  ],
   "cached": false
 }
 ```
 
-Los campos `description`, `primary_language` y `contributors_count` pueden ser
-`null`. Significa que GitHub no proporciona ese dato para ese repositorio; nunca
-se sustituye por un valor inventado.
+Los campos `description`, `primary_language`, `license`, `contributors_count` y
+`latest_release` pueden ser `null`. Significa que GitHub no proporciona ese dato
+para ese repositorio; nunca se sustituye por un valor inventado.
 
 ### Codigos de error
 
@@ -70,7 +89,8 @@ pip install -r requirements.txt
 ## Token de GitHub (opcional)
 
 Sin token la API permite **60 peticiones/hora** por IP. Como cada analisis hace
-3 peticiones, son unos **20 analisis/hora**. Con un token se sube a 5000/hora.
+5 peticiones, son solo **12 analisis/hora**. Con un token se sube a 5000/hora,
+es decir unos 1000 analisis. Se recomienda configurarlo.
 
 1. Crea un token en <https://github.com/settings/tokens> **sin marcar ningun
    scope** (solo necesitamos leer datos publicos).
@@ -84,7 +104,7 @@ El archivo `.env` esta en `.gitignore` y nunca se sube al repositorio.
 
 ## Cache
 
-Cada analisis consume 3 peticiones de la cuota de GitHub, asi que los
+Cada analisis consume 5 peticiones de la cuota de GitHub, asi que los
 resultados se guardan en memoria durante 5 minutos por defecto. Una segunda
 consulta al mismo repositorio se responde al instante y sin gastar cuota:
 
@@ -145,15 +165,29 @@ aislada y cambiar una capa sin tocar las demas.
 
 ## Como funciona por dentro
 
-Un analisis necesita tres endpoints distintos de GitHub, que se consultan **en
+Un analisis necesita cinco endpoints distintos de GitHub, que se consultan **en
 paralelo** con `asyncio.gather`:
 
 | Dato | Endpoint de GitHub |
 |---|---|
-| Datos generales | `GET /repos/{owner}/{repo}` |
+| Datos generales, licencia, topics, tamano | `GET /repos/{owner}/{repo}` |
 | Lenguajes | `GET /repos/{owner}/{repo}/languages` |
 | Numero de contributors | `GET /repos/{owner}/{repo}/contributors?per_page=1` |
+| Ultima release | `GET /repos/{owner}/{repo}/releases/latest` |
+| Commits recientes | `GET /repos/{owner}/{repo}/commits?per_page=5` |
 
 Para contar contributors no se recorren todas las paginas: se pide **un
 contributor por pagina** y se lee el numero de la ultima pagina de la cabecera
 `Link`, con lo que basta una sola peticion.
+
+Algunos codigos de GitHub no son errores segun el endpoint:
+
+| Endpoint | Codigo | Significado real | Se devuelve |
+|---|---|---|---|
+| `/releases/latest` | 404 | El repositorio no tiene releases | `null` |
+| `/commits` | 409 | El repositorio esta vacio | `[]` |
+| `/contributors` | 204 | El repositorio esta vacio | `0` |
+| `/contributors` | 403 | Historial demasiado grande para contarlo | `null` |
+
+Por eso cada uno se trata por separado antes de la comprobacion general de
+errores: un 404 en `/releases/latest` no significa que el repositorio no exista.

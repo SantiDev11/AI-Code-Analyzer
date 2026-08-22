@@ -25,6 +25,33 @@ class Repository(BaseModel):
         description="Lenguaje predominante, o null si GitHub no lo detecta"
     )
     url: str = Field(description="URL publica del repositorio")
+    license: str | None = Field(
+        description="Identificador SPDX de la licencia, o null si no tiene"
+    )
+    topics: list[str] = Field(description="Etiquetas tematicas del repositorio")
+    size_kb: int = Field(description="Tamano del repositorio en kilobytes")
+    is_archived: bool = Field(
+        description="True si el repositorio esta archivado (solo lectura)"
+    )
+
+
+class Release(BaseModel):
+    """Ultima version publicada del repositorio."""
+
+    tag: str = Field(description="Etiqueta de la version, por ejemplo 'v1.2.0'")
+    name: str | None = Field(description="Titulo de la release, o null si no tiene")
+    published_at: datetime = Field(description="Fecha de publicacion (UTC)")
+    url: str = Field(description="URL de la release en GitHub")
+
+
+class Commit(BaseModel):
+    """Un commit del historial reciente."""
+
+    sha: str = Field(description="Identificador corto del commit (7 caracteres)")
+    message: str = Field(description="Primera linea del mensaje del commit")
+    author: str | None = Field(description="Autor del commit, o null si se desconoce")
+    date: datetime = Field(description="Fecha del commit (UTC)")
+    url: str = Field(description="URL del commit en GitHub")
 
 
 class AnalysisResponse(BaseModel):
@@ -39,6 +66,12 @@ class AnalysisResponse(BaseModel):
             "Numero total de contribuidores, o null si GitHub se niega a "
             "calcularlo (ocurre en repositorios con un historial enorme)"
         )
+    )
+    latest_release: Release | None = Field(
+        description="Ultima version publicada, o null si el repositorio no tiene"
+    )
+    recent_commits: list[Commit] = Field(
+        description="Ultimos commits de la rama principal, del mas reciente al mas antiguo"
     )
     cached: bool = Field(
         default=False,
@@ -58,9 +91,28 @@ class AnalysisResponse(BaseModel):
                     "updated_at": "2024-05-02T08:12:44Z",
                     "primary_language": "Python",
                     "url": "https://github.com/fastapi/fastapi",
+                    "license": "MIT",
+                    "topics": ["python", "api", "async"],
+                    "size_kb": 40123,
+                    "is_archived": False,
                 },
                 "languages": {"Python": 1245678, "HTML": 4321},
                 "contributors_count": 654,
+                "latest_release": {
+                    "tag": "0.115.0",
+                    "name": "0.115.0",
+                    "published_at": "2024-04-20T10:00:00Z",
+                    "url": "https://github.com/fastapi/fastapi/releases/tag/0.115.0",
+                },
+                "recent_commits": [
+                    {
+                        "sha": "a1b2c3d",
+                        "message": "Fix typo in docs",
+                        "author": "tiangolo",
+                        "date": "2024-05-02T08:00:00Z",
+                        "url": "https://github.com/fastapi/fastapi/commit/a1b2c3d",
+                    }
+                ],
                 "cached": False,
             }
         }
