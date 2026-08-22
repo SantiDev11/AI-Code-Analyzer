@@ -1,0 +1,18 @@
+# Entorno virtual
+.venv/
+venv/
+
+# Secretos: el .env real NUNCA se sube
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Tests
+.pytest_cache/
+
+# Editores
+.vscode/
+.idea/
