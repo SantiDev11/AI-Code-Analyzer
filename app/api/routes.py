@@ -4,7 +4,7 @@ Esta capa no sabe hablar con GitHub. Solo recibe la peticion, delega en el
 servicio y decide que codigo de estado corresponde a cada error.
 """
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
 
 from app.schemas.repository import AnalysisResponse
 from app.services import github
@@ -18,10 +18,23 @@ router = APIRouter()
     summary="Analiza un repositorio publico de GitHub",
     tags=["analysis"],
 )
-async def analyze(owner: str, repo: str) -> AnalysisResponse:
-    """Devuelve datos reales del repositorio consultados en la GitHub REST API."""
+async def analyze(
+    owner: str,
+    repo: str,
+    commits: int = Query(
+        default=github.RECENT_COMMITS_LIMIT,
+        ge=1,
+        le=github.MAX_RECENT_COMMITS,
+        description="Cuantos commits recientes incluir en el analisis",
+    ),
+) -> AnalysisResponse:
+    """Devuelve datos reales del repositorio consultados en la GitHub REST API.
+
+    FastAPI valida `commits` contra los limites declarados y responde 422 por
+    su cuenta si el valor se sale del rango, sin que haya que comprobarlo aqui.
+    """
     try:
-        return await github.analyze_repository(owner, repo)
+        return await github.analyze_repository(owner, repo, commits_limit=commits)
 
     except github.RepositoryNotFound as error:
         raise HTTPException(

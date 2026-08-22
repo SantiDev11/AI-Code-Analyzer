@@ -11,6 +11,7 @@ a traves de la GitHub REST API.
 | Metodo | Ruta | Descripcion |
 |---|---|---|
 | `GET` | `/analyze/{owner}/{repo}` | Analiza un repositorio publico |
+| `GET` | `/analyze/{owner}/{repo}?commits=N` | Igual, pidiendo N commits recientes |
 | `GET` | `/health` | Comprueba que el servicio esta vivo |
 | `GET` | `/docs` | Documentacion interactiva (Swagger UI) |
 
@@ -183,7 +184,12 @@ paralelo** con `asyncio.gather`:
 | Lenguajes | `GET /repos/{owner}/{repo}/languages` |
 | Contributors | `GET /repos/{owner}/{repo}/contributors?per_page=10` |
 | Ultima release | `GET /repos/{owner}/{repo}/releases/latest` |
-| Commits recientes | `GET /repos/{owner}/{repo}/commits?per_page=5` |
+| Commits recientes | `GET /repos/{owner}/{repo}/commits?per_page=10` |
+
+De commits recientes se devuelven **10** por defecto. La cantidad se ajusta con
+el parametro `commits` (entre 1 y 100, el maximo que sirve GitHub por pagina);
+fuera de ese rango la API responde `422`. El limite forma parte de la clave de
+cache, asi que pedir una cantidad distinta vuelve a consultar a GitHub.
 
 De contributors se publican los mas activos, no la lista entera: GitHub ya los
 devuelve ordenados de mas a menos contribuciones, asi que basta la primera

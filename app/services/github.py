@@ -23,8 +23,12 @@ from app.services.cache import TTLCache
 API_BASE = "https://api.github.com"
 TIMEOUT = httpx.Timeout(10.0)
 
-# Cuantos commits recientes se incluyen en el analisis.
-RECENT_COMMITS_LIMIT = 5
+# Cuantos commits recientes se incluyen si no se pide otra cosa.
+RECENT_COMMITS_LIMIT = 10
+
+# Tope admitido. GitHub no sirve mas de 100 por pagina, asi que pedir mas no
+# devolveria commits adicionales: solo gastaria cuota.
+MAX_RECENT_COMMITS = 100
 
 # Cuantos contribuidores se incluyen. GitHub los devuelve ya ordenados de mas a
 # menos contribuciones, asi que la primera pagina es directamente el top.
@@ -183,7 +187,7 @@ async def _fetch_latest_release(
 
 
 async def _fetch_recent_commits(
-    client: httpx.AsyncClient, owner: str, repo: str
+    client: httpx.AsyncClient, owner: str, repo: str, limit: int
 ) -> list[Commit]:
     """GET /repos/{owner}/{repo}/commits -> ultimos commits de la rama principal.
 
@@ -191,14 +195,14 @@ async def _fetch_recent_commits(
     correcta es la vacia, no un error.
     """
     response = await client.get(
-        f"/repos/{owner}/{repo}/commits", params={"per_page": RECENT_COMMITS_LIMIT}
+        f"/repos/{owner}/{repo}/commits", params={"per_page": limit}
     )
 
     if response.status_code == 409:
         return []
 
     _raise_for_status(response)
-    return [_to_commit(item) for item in response.json()]
+    return _to_commits(response.json())
 
 
 # --------------------------------------------------------------------------
@@ -210,16 +214,39 @@ def _to_commit(data: dict) -> Commit:
     """Traduce un commit de GitHub a nuestro modelo Commit."""
     commit = data["commit"]
     # data["author"] es la cuenta de GitHub y puede ser null si el correo del
-    # commit no esta asociado a ningun usuario; commit["author"]["name"] es el
-    # nombre que quedo escrito en el propio commit y siempre existe.
-    author = data.get("author") or {}
+    # commit no esta asociado a ningun usuario; commit["author"] guarda el
+    # nombre y la fecha que quedaron escritos en el propio commit.
+    cuenta = data.get("author") or {}
+    firma = commit.get("author") or {}
+
+    # Un mensaje vacio es legal en git, asi que splitlines() puede no devolver
+    # ninguna linea.
+    lineas = commit["message"].splitlines()
+
     return Commit(
         sha=data["sha"][:7],
-        message=commit["message"].splitlines()[0],
-        author=author.get("login") or commit["author"]["name"],
-        date=commit["author"]["date"],
+        message=lineas[0] if lineas else "",
+        # Sin cuenta y sin nombre firmado no hay autor que publicar: null antes
+        # que inventarlo.
+        author=cuenta.get("login") or firma.get("name"),
+        date=firma["date"],
         url=data["html_url"],
     )
+
+
+def _to_commits(data: object) -> list[Commit]:
+    """Traduce la lista de commits de GitHub.
+
+    Si a un commit le falta la fecha, o la respuesta no tiene la forma que
+    esperamos, preferimos un error controlado (que la capa de rutas traduce a
+    502) antes que un fallo interno del servidor.
+    """
+    try:
+        return [_to_commit(item) for item in data]
+    except (TypeError, KeyError, ValidationError) as error:
+        raise GitHubError(
+            f"Lista de commits con un formato inesperado: {error}"
+        ) from error
 
 
 def _tiene_usuario(item: object) -> bool:
@@ -279,12 +306,18 @@ def _to_repository(data: dict) -> Repository:
     )
 
 
-def _cache_key(owner: str, repo: str) -> str:
-    """Clave de cache. GitHub no distingue mayusculas en owner ni en repo."""
-    return f"{owner.lower()}/{repo.lower()}"
+def _cache_key(owner: str, repo: str, commits_limit: int) -> str:
+    """Clave de cache. GitHub no distingue mayusculas en owner ni en repo.
+
+    El limite forma parte de la clave: pedir 30 commits despues de pedir 10
+    debe volver a consultar GitHub, no reutilizar la respuesta corta.
+    """
+    return f"{owner.lower()}/{repo.lower()}#{commits_limit}"
 
 
-async def analyze_repository(owner: str, repo: str) -> AnalysisResponse:
+async def analyze_repository(
+    owner: str, repo: str, commits_limit: int = RECENT_COMMITS_LIMIT
+) -> AnalysisResponse:
     """Devuelve el analisis completo del repositorio.
 
     Si el mismo repositorio se consulto hace poco, se reutiliza el resultado
@@ -293,7 +326,7 @@ async def analyze_repository(owner: str, repo: str) -> AnalysisResponse:
     Las cinco peticiones son independientes entre si, por lo que se lanzan en
     paralelo: el tiempo total es el de la mas lenta, no la suma de las cinco.
     """
-    key = _cache_key(owner, repo)
+    key = _cache_key(owner, repo, commits_limit)
 
     cached_result = _cache.get(key)
     if cached_result is not None:
@@ -313,7 +346,7 @@ async def analyze_repository(owner: str, repo: str) -> AnalysisResponse:
                 _fetch_languages(client, owner, repo),
                 _fetch_contributors(client, owner, repo),
                 _fetch_latest_release(client, owner, repo),
-                _fetch_recent_commits(client, owner, repo),
+                _fetch_recent_commits(client, owner, repo, commits_limit),
             )
         except httpx.TimeoutException as error:
             raise GitHubUnavailable("GitHub ha tardado demasiado en responder") from error
