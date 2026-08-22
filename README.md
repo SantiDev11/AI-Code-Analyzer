@@ -1,29 +1,45 @@
 # AI-Code-Analyzer
 
-Backend en FastAPI que consulta datos reales de repositorios publicos de GitHub
-a traves de la GitHub REST API.
+Backend en FastAPI que realiza un análisis técnico integral de repositorios públicos de GitHub combinando datos de la GitHub REST API, señales de calidad de código, métricas cuantitativas y un análisis técnico estructurado generado por Inteligencia Artificial.
 
-> Version actual: **MVP**. Sin inteligencia artificial, frontend, base de datos
-> ni Docker. Solo el backend y un endpoint.
+---
+
+## Características Principales
+
+1. **Repository Metadata & Stats:** Métricas generales, estrellas, forks, lenguaje predominante, licencia, topics y tamaño.
+2. **Languages & Contributors:** Distribución de bytes por lenguaje y principales colaboradores.
+3. **Recent Commits, Issues & Pull Requests:** Muestreo reciente con conteos clasificados (abiertos, cerrados, mergeados).
+4. **Releases & Versioning:** Historial reciente de versiones diferenciando publicaciones, borradores y prereleases.
+5. **Activity (Días Naturales UTC):** Distribución temporal diaria de actividad sin peticiones extra a la API.
+6. **Code Quality Signals:** Detección de configuración de tests, documentación (README, CONTRIBUTING, docs/), CI/CD, linters, formateadores, tipado estático y cobertura a partir del Git Tree de la rama por defecto.
+7. **Code Metrics:** Recuento de archivos, directorios jerárquicos, clasificación (source, test, doc, config), distribución por extensión y top de archivos más pesados.
+8. **AI Technical Analysis:** Evaluación técnica fundamentada estrictamente en evidencia real (resumen, fortalezas, aspectos de atención con evidencia, recomendaciones accionables y visión técnica).
+
+---
 
 ## Endpoints
 
-| Metodo | Ruta | Descripcion |
+| Método | Ruta | Descripción |
 |---|---|---|
-| `GET` | `/analyze/{owner}/{repo}` | Analiza un repositorio publico |
-| `GET` | `/analyze/{owner}/{repo}?commits=N` | Igual, pidiendo N commits recientes |
-| `GET` | `/analyze/{owner}/{repo}?issues=N` | Igual, analizando N issues |
-| `GET` | `/analyze/{owner}/{repo}?pulls=N` | Igual, analizando N pull requests |
-| `GET` | `/analyze/{owner}/{repo}?releases=N` | Igual, analizando N releases |
-| `GET` | `/analyze/{owner}/{repo}?activity_days=N` | Igual, con la actividad de N dias |
-| `GET` | `/health` | Comprueba que el servicio esta vivo |
-| `GET` | `/docs` | Documentacion interactiva (Swagger UI) |
+| `GET` | `/analyze/{owner}/{repo}` | Analiza un repositorio público |
+| `GET` | `/analyze/{owner}/{repo}?commits=N` | Cantidad de commits recientes a incluir (1–100, def: 10) |
+| `GET` | `/analyze/{owner}/{repo}?issues=N` | Cantidad de issues a analizar (1–100, def: 10) |
+| `GET` | `/analyze/{owner}/{repo}?pulls=N` | Cantidad de pull requests a analizar (1–100, def: 10) |
+| `GET` | `/analyze/{owner}/{repo}?releases=N` | Cantidad de releases a analizar (1–100, def: 10) |
+| `GET` | `/analyze/{owner}/{repo}?activity_days=N` | Ventana en días para el análisis de actividad (1–365, def: 30) |
+| `GET` | `/health` | Healthcheck del servicio |
+| `GET` | `/docs` | Documentación interactiva Swagger UI |
+| `GET` | `/redoc` | Documentación interactiva ReDoc |
 
-### Ejemplo
+---
+
+## Ejemplo de Uso
 
 ```bash
 curl http://127.0.0.1:8000/analyze/encode/httpx
 ```
+
+### Respuesta de Ejemplo
 
 ```json
 {
@@ -41,7 +57,8 @@ curl http://127.0.0.1:8000/analyze/encode/httpx
     "license": "BSD-3-Clause",
     "topics": ["asyncio", "http", "python", "trio"],
     "size_kb": 8594,
-    "is_archived": false
+    "is_archived": false,
+    "default_branch": "master"
   },
   "languages": {
     "Python": 570031,
@@ -68,233 +85,229 @@ curl http://127.0.0.1:8000/analyze/encode/httpx
       "message": "Adapt test_response_decode_text_using_autodetect for chardet 6.0",
       "author": "musicinmybrain",
       "date": "2026-02-23T10:40:42Z",
-      "url": "https://github.com/encode/httpx/commit/b5addb6..."
+      "url": "https://github.com/encode/httpx/commit/b5addb6"
     }
   ],
-  "cached": false
+  "issues": [],
+  "issues_count": 0,
+  "open_issues_count": 0,
+  "closed_issues_count": 0,
+  "pull_requests": [],
+  "pull_requests_count": 0,
+  "open_pull_requests_count": 0,
+  "closed_pull_requests_count": 0,
+  "merged_pull_requests_count": 0,
+  "releases": [],
+  "releases_count": 0,
+  "published_releases_count": 0,
+  "draft_releases_count": 0,
+  "prereleases_count": 0,
+  "activity": {
+    "days": 30,
+    "since": "2026-07-23",
+    "until": "2026-08-22",
+    "total_commits": 1,
+    "total_issues": 0,
+    "total_pull_requests": 0,
+    "total_releases": 0,
+    "daily": [
+      {
+        "date": "2026-02-23",
+        "commits": 1,
+        "issues": 0,
+        "pull_requests_opened": 0,
+        "pull_requests_closed": 0,
+        "releases": 0
+      }
+    ]
+  },
+  "quality": {
+    "tree_available": True,
+    "tree_truncated": False,
+    "files_scanned": 150,
+    "tests": {
+      "detected": True,
+      "files": 12,
+      "directories": ["tests"]
+    },
+    "documentation": {
+      "readme": True,
+      "contributing": True,
+      "docs_directory": True,
+      "files": ["README.md", "CONTRIBUTING.md"]
+    },
+    "ci": {
+      "detected": True,
+      "files": [".github/workflows/test.yml"]
+    },
+    "linting": {
+      "detected": True,
+      "files": [".flake8"]
+    },
+    "formatting": {
+      "detected": True,
+      "files": [".editorconfig"]
+    },
+    "type_checking": {
+      "detected": True,
+      "files": ["mypy.ini"]
+    },
+    "dependencies": {
+      "detected": True,
+      "files": ["pyproject.toml"]
+    },
+    "coverage": {
+      "configured": True,
+      "percentage": null,
+      "files": [".coveragerc"]
+    },
+    "undetermined_config": ["pyproject.toml"]
+  },
+  "metrics": {
+    "tree_available": True,
+    "tree_truncated": False,
+    "total_files": 150,
+    "total_directories": 24,
+    "source_files": 110,
+    "test_files": 12,
+    "documentation_files": 5,
+    "configuration_files": 8,
+    "file_extensions": {
+      ".py": 122,
+      ".md": 5,
+      ".toml": 2,
+      ".yml": 2
+    },
+    "largest_files": [
+      {
+        "path": "httpx/_client.py",
+        "size_bytes": 48200
+      }
+    ],
+    "lines_of_code": null
+  },
+  "ai_analysis": {
+    "summary": "HTTPX es una libreria HTTP moderna, modular y con solida ingenieria de software.",
+    "strengths": [
+      "Suite de pruebas exhaustivo con cobertura amplia en modo sincrono y asincrono.",
+      "Flujo de integracion continua y tipado estricto con mypy implementados."
+    ],
+    "concerns": [
+      {
+        "title": "Configuracion de cobertura no verificable en raiz",
+        "description": "No se detecto reporte publico de porcentaje de cobertura.",
+        "severity": "low",
+        "evidence": "CoverageSignal porcentaje es null en los metadatos."
+      }
+    ],
+    "recommendations": [
+      {
+        "title": "Publicar insignias de cobertura en README",
+        "description": "Vincular el servicio de Codecov para visibilidad publica del estado de los tests.",
+        "priority": "low"
+      }
+    ],
+    "technical_overview": {
+      "architecture": "Cliente HTTP modular con soporte para backends anyio, trio y asyncio.",
+      "stack": "Python, httpx, mypy, pytest, ruff, GitHub Actions.",
+      "activity_summary": "Proyecto estable con mantenimiento continuo y versiones publicadas periodicamente."
+    }
+  },
+  "cached": False
 }
 ```
 
-Los campos `description`, `primary_language`, `license` y
-`latest_release` pueden ser `null`. Significa que GitHub no proporciona ese dato
-para ese repositorio; nunca se sustituye por un valor inventado.
+---
 
-### Codigos de error
+## Configuración y Variables de Entorno
 
-| Codigo | Cuando ocurre |
-|---|---|
-| `404` | El repositorio no existe o es privado |
-| `429` | Cuota de la GitHub API agotada |
-| `502` | GitHub ha respondido algo inesperado |
-| `503` | GitHub no responde (timeout o fallo de red) |
+Copia el archivo `.env.example` como `.env`:
 
-## Instalacion
+```bash
+cp .env.example .env
+```
+
+### Parámetros Disponibles:
+
+```ini
+# Token personal de GitHub (opcional pero recomendado para elevar el rate limit de 60 a 5000 peticiones/hora)
+GITHUB_TOKEN=
+
+# Tiempo de vida de la cache en memoria en segundos (0 para desactivar)
+CACHE_TTL_SECONDS=300
+
+# Dias naturales por defecto para el analisis de actividad
+ACTIVITY_DAYS=30
+
+# Configuracion de Inteligencia Artificial (OpenAI-compatible)
+AI_PROVIDER=openai
+AI_API_KEY=
+AI_MODEL=gpt-4o-mini
+AI_BASE_URL=https://api.openai.com/v1
+AI_TIMEOUT_SECONDS=30.0
+```
+
+> **Comportamiento sin IA:** Si `AI_API_KEY` no se define o está vacía, el análisis de GitHub funciona con total normalidad y `ai_analysis` devuelve `null` de forma segura.
+
+---
+
+## Instalación y Ejecución
 
 Requiere **Python 3.12+**.
 
 ```bash
+# 1. Crear y activar entorno virtual
 python -m venv .venv
 .venv\Scripts\activate          # Windows
 # source .venv/bin/activate     # Linux / macOS
 
+# 2. Instalar dependencias
 pip install -r requirements.txt
-```
 
-## Token de GitHub (opcional)
-
-Sin token la API permite **60 peticiones/hora** por IP. Como cada analisis hace
-6 peticiones, son solo **10 analisis/hora**. Con un token se sube a 5000/hora,
-es decir unos 830 analisis. Se recomienda configurarlo.
-
-1. Crea un token en <https://github.com/settings/tokens> **sin marcar ningun
-   scope** (solo necesitamos leer datos publicos).
-2. Copia `.env.example` como `.env` y pega el token:
-
-```
-GITHUB_TOKEN=ghp_tu_token_aqui
-```
-
-El archivo `.env` esta en `.gitignore` y nunca se sube al repositorio.
-
-## Cache
-
-Cada analisis consume 6 peticiones de la cuota de GitHub, asi que los
-resultados se guardan en memoria durante 5 minutos por defecto. Una segunda
-consulta al mismo repositorio se responde al instante y sin gastar cuota:
-
-```
-GET /analyze/encode/httpx   ->  6242 ms   "cached": false
-GET /analyze/encode/httpx   ->     0 ms   "cached": true
-```
-
-El campo `cached` de la respuesta indica el origen de los datos. El tiempo de
-vida se ajusta con `CACHE_TTL_SECONDS` en el `.env`; con `0` se desactiva.
-
-La cache vive dentro del proceso: al reiniciar el servidor se vacia, y cada
-proceso tiene la suya. Es suficiente para un MVP; compartirla entre varios
-procesos exigiria algo externo como Redis.
-
-## Ejecucion
-
-```bash
+# 3. Iniciar servidor de desarrollo
 uvicorn app.main:app --reload
 ```
 
-Abre <http://127.0.0.1:8000/docs> para probar el endpoint desde el navegador.
+Accede a <http://127.0.0.1:8000/docs> para explorar y probar la API en Swagger UI.
 
-## Tests
+---
+
+## Ejecución de Tests
 
 ```bash
 pip install -r requirements-dev.txt
 pytest
 ```
 
-Los tests simulan las respuestas de GitHub con `httpx.MockTransport`: no
-necesitan conexion a internet ni consumen cuota de la API.
+Todas las pruebas utilizan transportes simulados (`httpx.MockTransport`): no consumen cuota de la GitHub API ni realizan peticiones reales al proveedor de IA.
 
-## Estructura
+---
+
+## Arquitectura Interna
 
 ```
-AI-Code-Analyzer/
-├── app/
-│   ├── main.py                 # Punto de entrada: crea la app y monta el router
-│   ├── config.py               # Lee GITHUB_TOKEN del entorno o del .env
-│   ├── api/
-│   │   └── routes.py           # Endpoints y traduccion de errores a codigos HTTP
-│   ├── services/
-│   │   ├── github.py           # Comunicacion con la GitHub REST API
-│   │   └── cache.py            # Cache en memoria con expiracion (TTL)
-│   └── schemas/
-│       └── repository.py       # Modelos Pydantic: el contrato de la respuesta
-├── tests/
-├── .env.example
-├── requirements.txt
-├── requirements-dev.txt
-└── pytest.ini
+Cliente HTTP (Swagger / Frontend / cURL)
+                     ↓
+             app/api/routes.py
+                     ↓
+        app/services/github.py (Orquestador de llamadas en paralelo)
+       ├── GitHub REST API (8 endpoints paralelos)
+       ├── Git Tree de default_branch (1 única llamada para Quality + Metrics)
+       ├── app/services/quality.py (Deducción de señales en memoria)
+       ├── app/services/metrics.py (Cálculo de métricas en memoria)
+       ├── app/services/ai/service.py (Análisis técnico con IA)
+       │    ├── Context Builder (Límites seguros sin secretos)
+       │    ├── AI Client (HTTP OpenAI-compatible)
+       │    └── Pydantic Schema Validation (AIAnalysis)
+       └── app/services/cache.py (Caché en memoria con TTL)
 ```
 
-Cada capa depende solo de la siguiente: `routes` no sabe hablar con GitHub y
-`github.py` no sabe nada de FastAPI. Eso permite testear el servicio de forma
-aislada y cambiar una capa sin tocar las demas.
+---
 
-## Como funciona por dentro
+## Limitaciones Conocidas
 
-Un analisis necesita ocho endpoints distintos de GitHub, que se consultan **en
-paralelo** con `asyncio.gather`:
-
-| Dato | Endpoint de GitHub |
-|---|---|
-| Datos generales, licencia, topics, tamano | `GET /repos/{owner}/{repo}` |
-| Lenguajes | `GET /repos/{owner}/{repo}/languages` |
-| Contributors | `GET /repos/{owner}/{repo}/contributors?per_page=10` |
-| Ultima release | `GET /repos/{owner}/{repo}/releases/latest` |
-| Historial de releases | `GET /repos/{owner}/{repo}/releases?per_page=10` |
-| Commits recientes | `GET /repos/{owner}/{repo}/commits?per_page=10` |
-| Issues | `GET /repos/{owner}/{repo}/issues?per_page=10&state=all` |
-| Pull requests | `GET /repos/{owner}/{repo}/pulls?per_page=10&state=all&sort=created&direction=desc` |
-
-De issues se analizan **10** por defecto, ajustables con `issues` (1-100).
-GitHub sirve los pull requests por el mismo endpoint que los issues, asi que se
-descartan mirando la clave `pull_request`, que solo ellos llevan. Los tres
-contadores (`issues_count`, `open_issues_count`, `closed_issues_count`) se
-calculan despues de ese filtro, sobre los issues que de verdad analizamos.
-
-Cuidado con no confundir `repository.open_issues`, que es el contador de GitHub
-e **incluye pull requests**, con `open_issues_count`, que cuenta solo issues
-reales de la muestra analizada.
-
-De pull requests se analizan **10** por defecto, ajustables con `pulls`
-(1-100). Se piden a `/pulls` y no a `/issues` porque solo ese endpoint trae la
-fecha de merge y las ramas de origen y destino.
-
-Ojo con los contadores, porque GitHub solo tiene dos estados (`open` y
-`closed`) y el merge es otra cosa distinta:
-
-| Contador | Como se calcula |
-|---|---|
-| `open_pull_requests_count` | `state == "open"` |
-| `closed_pull_requests_count` | `state == "closed"`, **mergeados incluidos** |
-| `merged_pull_requests_count` | `merged_at` tiene fecha |
-
-Un pull request mergeado esta cerrado, asi que suma en los dos ultimos a la
-vez: `merged` no es un tercer estado, sino algo que le pasa a uno cerrado. El
-campo `merged` de GitHub no sirve aqui, porque solo aparece al pedir un pull
-request de uno en uno; en el listado el unico rastro del merge es `merged_at`.
-
-De releases se analizan **10** por defecto, ajustables con `releases` (1-100).
-Se piden a `/releases`, que devuelve el historial entero incluidos los
-borradores; `/releases/latest` sigue usandose aparte para `latest_release`,
-porque ese endpoint ignora los borradores y responde la ultima version
-realmente publicada.
-
-Aqui pasa lo mismo que con los pull requests: `draft` y `prerelease` son dos
-indicadores independientes, no tres estados.
-
-| Contador | Como se calcula |
-|---|---|
-| `published_releases_count` | `draft == false`, **prereleases incluidas** |
-| `draft_releases_count` | `draft == true` |
-| `prereleases_count` | `prerelease == true` |
-
-Publicado significa exactamente "no es un borrador": GitHub deja
-`published_at` en `null` mientras lo sea. Una version previa publicada cuenta
-a la vez en `published_releases_count` y en `prereleases_count`, y un borrador
-marcado como version previa (GitHub lo permite) cuenta en los dos ultimos pero
-en ninguno esta publicado.
-
-La lista se devuelve **en el orden de GitHub**, sin reordenar: los borradores
-no tienen fecha de publicacion con la que compararlos.
-
-### Activity: actividad reciente por dia
-
-`activity` **no consulta GitHub**. Reparte por dia los commits, issues, pull
-requests y releases que las ocho peticiones anteriores ya trajeron, asi que la
-funcionalidad sale gratis en cuota de API.
-
-| Recuento diario | De donde sale |
-|---|---|
-| `commits` | `date` del commit |
-| `issues` | `created_at` del issue |
-| `pull_requests_opened` | `created_at` del pull request |
-| `pull_requests_closed` | `closed_at` del pull request |
-| `releases` | `published_at` del release (los borradores no cuentan) |
-
-El periodo son **dias naturales en UTC contando hoy**: con el valor por
-defecto de 30, `since` es hoy menos 29 dias y `until` es hoy. Se ajusta con
-`ACTIVITY_DAYS` en el `.env` o, por peticion, con `?activity_days=N` (1-365).
-La ventana forma parte de la clave de cache. En `daily` solo aparecen los dias
-que tuvieron algo, del mas reciente al mas antiguo, y los cuatro totales se
-calculan sumando esos dias para que no puedan discrepar.
-
-Todas las fechas se agrupan por dia **UTC**, que es la zona en la que GitHub
-publica sus timestamps. Agrupar por hora local haria que el mismo repositorio
-diera resultados distintos segun donde corra el servicio.
-
-> **Los totales son un minimo, no la cifra real.** Activity se calcula sobre
-> las muestras que analizamos (10 commits, 10 issues, 10 pull requests y 10
-> releases por defecto), no sobre el historial completo. En un repositorio muy
-> activo, `total_commits: 10` puede significar "los 10 que miramos caen en el
-> periodo", no "hubo 10 commits en 30 dias". Subir `commits`, `issues`,
-> `pulls` y `releases` acerca ambas cifras.
-
-De commits recientes se devuelven **10** por defecto. La cantidad se ajusta con
-el parametro `commits` (entre 1 y 100, el maximo que sirve GitHub por pagina);
-fuera de ese rango la API responde `422`. El limite forma parte de la clave de
-cache, asi que pedir una cantidad distinta vuelve a consultar a GitHub.
-
-De contributors se publican los mas activos, no la lista entera: GitHub ya los
-devuelve ordenados de mas a menos contribuciones, asi que basta la primera
-pagina. `contributors_count` describe cuantos incluye esa lista.
-
-Algunos codigos de GitHub no son errores segun el endpoint:
-
-| Endpoint | Codigo | Significado real | Se devuelve |
-|---|---|---|---|
-| `/releases/latest` | 404 | El repositorio no tiene releases | `null` |
-| `/commits` | 409 | El repositorio esta vacio | `[]` |
-| `/issues` | 404 | El repositorio tiene los issues desactivados | `[]` |
-| `/contributors` | 204 | El repositorio esta vacio | `0` |
-| `/contributors` | 403 | Historial demasiado grande para listarlo | `[]` |
-
-Por eso cada uno se trata por separado antes de la comprobacion general de
-errores: un 404 en `/releases/latest` no significa que el repositorio no exista.
+1. **Líneas de Código (`lines_of_code = null`):** La API de Git Tree proporciona tamaños en bytes (`size`), pero no contenidos. Para no saturar la cuota ni descargar repositorios completos, `lines_of_code` se mantiene como `null` explícito.
+2. **Git Tree Truncado (`tree_truncated = True`):** En repositorios masivos (> 100,000 archivos), GitHub trunca el árbol. El sistema marca `tree_truncated: true` y evalúa únicamente sobre el subconjunto recibido sin asumir falsos negativos.
+3. **Señales de Calidad Nulas:** Si el árbol de archivos no está disponible o fue truncado, las señales de calidad se marcan como `null` en lugar de `false`.
+4. **Disponibilidad de IA:** `ai_analysis` depende de la conectividad y cuota del proveedor externo configurado. Ante errores del proveedor, rate limits o respuestas malformadas, el sistema degrada elegantemente devolviendo `ai_analysis: null` sin afectar la respuesta general.
+5. **Aislamiento y Seguridad:** El backend **nunca** ejecuta archivos, scripts, `Makefile`, `package.json` ni dependencias del repositorio analizado.
