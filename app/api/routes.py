@@ -45,12 +45,18 @@ async def analyze(
         le=github.MAX_RELEASES,
         description="Cuantos releases analizar (los borradores cuentan)",
     ),
+    activity_days: int = Query(
+        default=github.ACTIVITY_DAYS,
+        ge=1,
+        le=github.MAX_ACTIVITY_DAYS,
+        description="Dias naturales (UTC) que abarca el analisis de actividad",
+    ),
 ) -> AnalysisResponse:
     """Devuelve datos reales del repositorio consultados en la GitHub REST API.
 
-    FastAPI valida `commits`, `issues`, `pulls` y `releases` contra los
-    limites declarados y responde 422 por su cuenta si el valor se sale del
-    rango, sin que haya que comprobarlo aqui.
+    FastAPI valida `commits`, `issues`, `pulls`, `releases` y `activity_days`
+    contra los limites declarados y responde 422 por su cuenta si el valor se
+    sale del rango, sin que haya que comprobarlo aqui.
     """
     try:
         return await github.analyze_repository(
@@ -60,6 +66,7 @@ async def analyze(
             issues_limit=issues,
             pulls_limit=pulls,
             releases_limit=releases,
+            activity_days=activity_days,
         )
 
     except github.RepositoryNotFound as error:

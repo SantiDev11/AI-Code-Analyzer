@@ -6,15 +6,18 @@ capa de rutas traducira despues.
 """
 
 import asyncio
+from datetime import UTC, date, datetime, timedelta
 
 import httpx
 from pydantic import ValidationError
 
 from app.config import settings
 from app.schemas.repository import (
+    Activity,
     AnalysisResponse,
     Commit,
     Contributor,
+    DailyActivity,
     Issue,
     PullRequest,
     Release,
@@ -45,6 +48,12 @@ MAX_PULL_REQUESTS = 100
 # Y lo mismo para el historial de releases.
 RELEASES_LIMIT = 10
 MAX_RELEASES = 100
+
+# Ventana del analisis de actividad, en dias naturales UTC contando hoy. El
+# valor por defecto es configurable con ACTIVITY_DAYS; el tope evita periodos
+# absurdos, no hay datos con los que llenarlos.
+ACTIVITY_DAYS = settings.activity_days
+MAX_ACTIVITY_DAYS = 365
 
 # Cuantos contribuidores se incluyen. GitHub los devuelve ya ordenados de mas a
 # menos contribuciones, asi que la primera pagina es directamente el top.
@@ -117,6 +126,30 @@ def _raise_for_status(response: httpx.Response) -> None:
         )
 
     raise GitHubError(f"GitHub respondio {response.status_code}")
+
+
+def _utc_now() -> datetime:
+    """Instante actual en UTC.
+
+    Existe como funcion propia para que los tests puedan sustituirla y no
+    dependan del dia en que se ejecuten, igual que TTLCache admite un reloj.
+    """
+    return datetime.now(UTC)
+
+
+def _utc_date(momento: datetime | None) -> date | None:
+    """Dia UTC de un instante, o None si no hay fecha.
+
+    GitHub publica sus timestamps en UTC y pydantic los convierte en datetime
+    con zona horaria. Si alguno llegara sin zona lo tratamos como UTC en vez
+    de suponer la hora local de la maquina: agrupar por hora local haria que
+    el mismo repositorio diera resultados distintos segun donde corra esto.
+    """
+    if momento is None:
+        return None
+    if momento.tzinfo is None:
+        return momento.date()
+    return momento.astimezone(UTC).date()
 
 
 def _is_contributor_list_too_large(response: httpx.Response) -> bool:
@@ -422,6 +455,10 @@ def _to_pull_requests(data: object) -> list[PullRequest]:
                 author=(item.get("user") or {}).get("login"),
                 created_at=item["created_at"],
                 updated_at=item["updated_at"],
+                # Null mientras siga abierto. Un pull request cerrado sin
+                # mergear tiene closed_at pero no merged_at, asi que hacen
+                # falta los dos para contar cierres sin quedarse corto.
+                closed_at=item.get("closed_at"),
                 # En el listado de GitHub esta fecha es el unico rastro del
                 # merge: el campo "merged" solo existe pidiendo el pull
                 # request de uno en uno.
@@ -494,6 +531,74 @@ def _to_contributors(data: object) -> list[Contributor]:
     return sorted(contributors, key=lambda person: person.contributions, reverse=True)
 
 
+# Los recuentos que lleva cada dia, en el orden en que se declaran.
+_CAMPOS_DIARIOS = (
+    "commits",
+    "issues",
+    "pull_requests_opened",
+    "pull_requests_closed",
+    "releases",
+)
+
+
+def _build_activity(
+    commits: list[Commit],
+    issues: list[Issue],
+    pull_requests: list[PullRequest],
+    releases: list[ReleaseDetail],
+    days: int,
+    now: datetime,
+) -> Activity:
+    """Reparte por dia la actividad que ya hemos descargado.
+
+    No consulta GitHub: reaprovecha las cuatro listas del analisis. Por eso
+    los totales describen la muestra analizada dentro del periodo, no todo lo
+    que ocurrio de verdad en el repositorio.
+
+    Los borradores de release no cuentan: su published_at es null porque no
+    llegaron a publicarse nunca.
+    """
+    until = _utc_date(now)
+    since = until - timedelta(days=days - 1)
+
+    diario: dict[date, dict[str, int]] = {}
+
+    def anota(momento: datetime | None, campo: str) -> None:
+        dia = _utc_date(momento)
+        if dia is None or dia < since or dia > until:
+            return
+        recuento = diario.setdefault(dia, dict.fromkeys(_CAMPOS_DIARIOS, 0))
+        recuento[campo] += 1
+
+    for commit in commits:
+        anota(commit.date, "commits")
+    for issue in issues:
+        anota(issue.created_at, "issues")
+    for pull_request in pull_requests:
+        anota(pull_request.created_at, "pull_requests_opened")
+        anota(pull_request.closed_at, "pull_requests_closed")
+    for release in releases:
+        anota(release.published_at, "releases")
+
+    daily = [
+        DailyActivity(date=dia, **recuento)
+        for dia, recuento in sorted(diario.items(), reverse=True)
+    ]
+
+    # Los totales salen de sumar los dias, no de recorrer las listas otra vez:
+    # asi no pueden acabar contando cosas distintas.
+    return Activity(
+        days=days,
+        since=since,
+        until=until,
+        total_commits=sum(dia.commits for dia in daily),
+        total_issues=sum(dia.issues for dia in daily),
+        total_pull_requests=sum(dia.pull_requests_opened for dia in daily),
+        total_releases=sum(dia.releases for dia in daily),
+        daily=daily,
+    )
+
+
 def _to_repository(data: dict) -> Repository:
     """Traduce la respuesta de GitHub a nuestro modelo Repository."""
     return Repository(
@@ -521,6 +626,7 @@ def _cache_key(
     issues_limit: int,
     pulls_limit: int,
     releases_limit: int,
+    activity_days: int,
 ) -> str:
     """Clave de cache. GitHub no distingue mayusculas en owner ni en repo.
 
@@ -532,6 +638,7 @@ def _cache_key(
         f"{owner.lower()}/{repo.lower()}"
         f"#commits={commits_limit}#issues={issues_limit}"
         f"#pulls={pulls_limit}#releases={releases_limit}"
+        f"#days={activity_days}"
     )
 
 
@@ -542,6 +649,7 @@ async def analyze_repository(
     issues_limit: int = ISSUES_LIMIT,
     pulls_limit: int = PULL_REQUESTS_LIMIT,
     releases_limit: int = RELEASES_LIMIT,
+    activity_days: int = ACTIVITY_DAYS,
 ) -> AnalysisResponse:
     """Devuelve el analisis completo del repositorio.
 
@@ -552,7 +660,13 @@ async def analyze_repository(
     paralelo: el tiempo total es el de la mas lenta, no la suma de las ocho.
     """
     key = _cache_key(
-        owner, repo, commits_limit, issues_limit, pulls_limit, releases_limit
+        owner,
+        repo,
+        commits_limit,
+        issues_limit,
+        pulls_limit,
+        releases_limit,
+        activity_days,
     )
 
     cached_result = _cache.get(key)
@@ -624,6 +738,16 @@ async def analyze_repository(
         published_releases_count=sum(1 for r in releases if not r.draft),
         draft_releases_count=sum(1 for r in releases if r.draft),
         prereleases_count=sum(1 for r in releases if r.prerelease),
+        # Sin peticiones extra: la actividad se deduce de las cuatro listas
+        # que acabamos de traer.
+        activity=_build_activity(
+            recent_commits,
+            issues,
+            pull_requests,
+            releases,
+            activity_days,
+            _utc_now(),
+        ),
     )
     _cache.set(key, result)
     return result

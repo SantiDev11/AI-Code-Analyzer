@@ -20,6 +20,7 @@ def pr_crudo(
     state,
     login,
     merged_at=None,
+    cerrado=None,
     creado="2026-08-22T09:00:00Z",
     source="feature",
     target="main",
@@ -36,6 +37,9 @@ def pr_crudo(
         "user": {"login": login} if login else None,
         "created_at": creado,
         "updated_at": "2026-08-22T11:00:00Z",
+        # GitHub pone las dos fechas al mergear; cerrar sin mergear solo pone
+        # closed_at.
+        "closed_at": cerrado if cerrado is not None else merged_at,
         "merged_at": merged_at,
         "head": {"ref": source},
         "base": {"ref": target},
@@ -405,6 +409,7 @@ async def test_solo_se_devuelven_los_campos_de_nuestro_modelo(fake_github):
         "author",
         "created_at",
         "updated_at",
+        "closed_at",
         "merged_at",
         "source_branch",
         "target_branch",
@@ -490,6 +495,7 @@ def test_integracion_con_el_endpoint_analyze(fake_github):
         "author": "tomchristie",
         "created_at": "2026-08-20T10:00:00Z",
         "updated_at": "2026-08-22T11:00:00Z",
+        "closed_at": "2026-08-21T09:30:00Z",
         "merged_at": "2026-08-21T09:30:00Z",
         "source_branch": "feature",
         "target_branch": "main",

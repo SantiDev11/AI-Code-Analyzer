@@ -74,6 +74,7 @@ def test_analyze_devuelve_la_estructura_esperada(client, fake_github):
         "published_releases_count",
         "draft_releases_count",
         "prereleases_count",
+        "activity",
         "cached",
     }
     assert set(body["repository"]) == {

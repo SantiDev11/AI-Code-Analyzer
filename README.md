@@ -15,6 +15,7 @@ a traves de la GitHub REST API.
 | `GET` | `/analyze/{owner}/{repo}?issues=N` | Igual, analizando N issues |
 | `GET` | `/analyze/{owner}/{repo}?pulls=N` | Igual, analizando N pull requests |
 | `GET` | `/analyze/{owner}/{repo}?releases=N` | Igual, analizando N releases |
+| `GET` | `/analyze/{owner}/{repo}?activity_days=N` | Igual, con la actividad de N dias |
 | `GET` | `/health` | Comprueba que el servicio esta vivo |
 | `GET` | `/docs` | Documentacion interactiva (Swagger UI) |
 
@@ -243,6 +244,38 @@ en ninguno esta publicado.
 
 La lista se devuelve **en el orden de GitHub**, sin reordenar: los borradores
 no tienen fecha de publicacion con la que compararlos.
+
+### Activity: actividad reciente por dia
+
+`activity` **no consulta GitHub**. Reparte por dia los commits, issues, pull
+requests y releases que las ocho peticiones anteriores ya trajeron, asi que la
+funcionalidad sale gratis en cuota de API.
+
+| Recuento diario | De donde sale |
+|---|---|
+| `commits` | `date` del commit |
+| `issues` | `created_at` del issue |
+| `pull_requests_opened` | `created_at` del pull request |
+| `pull_requests_closed` | `closed_at` del pull request |
+| `releases` | `published_at` del release (los borradores no cuentan) |
+
+El periodo son **dias naturales en UTC contando hoy**: con el valor por
+defecto de 30, `since` es hoy menos 29 dias y `until` es hoy. Se ajusta con
+`ACTIVITY_DAYS` en el `.env` o, por peticion, con `?activity_days=N` (1-365).
+La ventana forma parte de la clave de cache. En `daily` solo aparecen los dias
+que tuvieron algo, del mas reciente al mas antiguo, y los cuatro totales se
+calculan sumando esos dias para que no puedan discrepar.
+
+Todas las fechas se agrupan por dia **UTC**, que es la zona en la que GitHub
+publica sus timestamps. Agrupar por hora local haria que el mismo repositorio
+diera resultados distintos segun donde corra el servicio.
+
+> **Los totales son un minimo, no la cifra real.** Activity se calcula sobre
+> las muestras que analizamos (10 commits, 10 issues, 10 pull requests y 10
+> releases por defecto), no sobre el historial completo. En un repositorio muy
+> activo, `total_commits: 10` puede significar "los 10 que miramos caen en el
+> periodo", no "hubo 10 commits en 30 dias". Subir `commits`, `issues`,
+> `pulls` y `releases` acerca ambas cifras.
 
 De commits recientes se devuelven **10** por defecto. La cantidad se ajusta con
 el parametro `commits` (entre 1 y 100, el maximo que sirve GitHub por pagina);

@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     # Segundos que se reutiliza un analisis ya calculado. Con 0 se desactiva.
     cache_ttl_seconds: int = 300
 
+    # Dias naturales (UTC) que abarca el analisis de actividad.
+    activity_days: int = 30
+
 
 # Instancia unica, importada por el resto de la aplicacion.
 settings = Settings()

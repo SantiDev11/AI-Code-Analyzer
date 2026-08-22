@@ -4,6 +4,9 @@ Estos modelos NO representan lo que devuelve GitHub, sino lo que devolvemos
 nosotros. La traduccion entre ambos formatos ocurre en app/services/github.py.
 """
 
+# `date` se importa con alias porque DailyActivity tiene un campo llamado
+# `date`: el nombre del campo taparia al del tipo dentro de la clase.
+from datetime import date as _Date
 from datetime import datetime
 from typing import Literal
 
@@ -108,6 +111,9 @@ class PullRequest(BaseModel):
     )
     created_at: datetime = Field(description="Fecha de apertura (UTC)")
     updated_at: datetime = Field(description="Fecha de la ultima actualizacion (UTC)")
+    closed_at: datetime | None = Field(
+        description="Fecha de cierre (UTC), o null si sigue abierto"
+    )
     merged_at: datetime | None = Field(
         description="Fecha del merge (UTC), o null si no se llego a mergear"
     )
@@ -146,6 +152,53 @@ class ReleaseDetail(BaseModel):
         description="Quien lo publico, o null si la cuenta ya no existe"
     )
     url: str = Field(description="URL del release en GitHub")
+
+
+class DailyActivity(BaseModel):
+    """Actividad de un unico dia natural.
+
+    Solo aparecen los dias que tuvieron algo; los dias vacios se omiten en
+    lugar de rellenar la lista con ceros.
+    """
+
+    date: _Date = Field(description="Dia al que corresponden los recuentos (UTC)")
+    commits: int = Field(description="Commits con fecha de ese dia")
+    issues: int = Field(description="Issues abiertos ese dia")
+    pull_requests_opened: int = Field(description="Pull requests abiertos ese dia")
+    pull_requests_closed: int = Field(description="Pull requests cerrados ese dia")
+    releases: int = Field(description="Releases publicados ese dia")
+
+
+class Activity(BaseModel):
+    """Actividad reciente del repositorio, repartida por dia.
+
+    Se calcula a partir de los commits, issues, pull requests y releases que
+    ya trae este mismo analisis: no cuesta ninguna peticion extra a GitHub.
+
+    Eso tiene una consecuencia importante: esas listas son **muestras
+    limitadas** (10 elementos de cada por defecto). Los totales cuentan lo que
+    hay en la muestra dentro del periodo, asi que en un repositorio muy activo
+    son un minimo, no la cifra real. Subir `commits`, `issues`, `pulls` y
+    `releases` acerca ambas cifras.
+
+    Todas las fechas se agrupan por dia **UTC**, que es la zona en la que
+    GitHub publica sus timestamps.
+    """
+
+    days: int = Field(description="Dias naturales que abarca el periodo, contando hoy")
+    since: _Date = Field(description="Primer dia del periodo (UTC), incluido")
+    until: _Date = Field(description="Ultimo dia del periodo (UTC), incluido: hoy")
+    total_commits: int = Field(description="Commits del periodo en la muestra analizada")
+    total_issues: int = Field(description="Issues abiertos en el periodo")
+    total_pull_requests: int = Field(
+        description="Pull requests abiertos en el periodo. Los cerrados se ven en `daily`"
+    )
+    total_releases: int = Field(
+        description="Releases publicados en el periodo. Los borradores no cuentan"
+    )
+    daily: list[DailyActivity] = Field(
+        description="Dias con actividad, del mas reciente al mas antiguo"
+    )
 
 
 class AnalysisResponse(BaseModel):
@@ -223,6 +276,9 @@ class AnalysisResponse(BaseModel):
     prereleases_count: int = Field(
         description="Cuantos de esos releases estan marcados como version previa"
     )
+    activity: Activity = Field(
+        description="Actividad reciente por dia, calculada con los datos ya analizados"
+    )
     cached: bool = Field(
         default=False,
         description="True si la respuesta viene de la cache y no de GitHub",
@@ -294,6 +350,7 @@ class AnalysisResponse(BaseModel):
                         "author": "SantiDev11",
                         "created_at": "2026-08-20T10:00:00Z",
                         "updated_at": "2026-08-21T10:00:00Z",
+                        "closed_at": "2026-08-21T09:30:00Z",
                         "merged_at": "2026-08-21T09:30:00Z",
                         "source_branch": "fix/error-handling",
                         "target_branch": "main",
@@ -322,6 +379,25 @@ class AnalysisResponse(BaseModel):
                 "published_releases_count": 1,
                 "draft_releases_count": 0,
                 "prereleases_count": 0,
+                "activity": {
+                    "days": 30,
+                    "since": "2024-04-01",
+                    "until": "2024-04-30",
+                    "total_commits": 1,
+                    "total_issues": 0,
+                    "total_pull_requests": 0,
+                    "total_releases": 1,
+                    "daily": [
+                        {
+                            "date": "2024-04-20",
+                            "commits": 1,
+                            "issues": 0,
+                            "pull_requests_opened": 0,
+                            "pull_requests_closed": 0,
+                            "releases": 1,
+                        }
+                    ],
+                },
                 "cached": False,
             }
         }
