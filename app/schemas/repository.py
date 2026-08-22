@@ -223,6 +223,8 @@ class QualitySignal(BaseModel):
 class TestsSignal(BaseModel):
     """Senal de deteccion del suite de tests."""
 
+    __test__ = False
+
     detected: bool | None = Field(
         description="True si se detectaron tests, False si no existen, null si no disponible/truncado"
     )
@@ -342,6 +344,64 @@ class Metrics(BaseModel):
     )
 
 
+class Concern(BaseModel):
+    """Aspecto de preocupacion o atencion fundamentado en datos del repositorio."""
+
+    title: str = Field(description="Titulo resumido del aspecto de atencion")
+    description: str = Field(description="Explicacion detallada del hallazgo")
+    severity: Literal["low", "medium", "high"] = Field(
+        description="Nivel de severidad justificado con datos"
+    )
+    evidence: str = Field(
+        description="Evidencia concreta obtenida de las metricas, calidad o metadatos"
+    )
+
+
+class Recommendation(BaseModel):
+    """Recomendacion tecnica accionable para el repositorio."""
+
+    title: str = Field(description="Accion concreta sugerida")
+    description: str = Field(description="Detalles de como implementar la mejora")
+    priority: Literal["low", "medium", "high"] = Field(
+        description="Prioridad de implementacion"
+    )
+
+
+class TechnicalOverview(BaseModel):
+    """Vision tecnica general del repositorio."""
+
+    architecture: str = Field(
+        description="Resumen de la arquitectura deducida de la estructura"
+    )
+    stack: str = Field(description="Resumen del stack tecnologico principal")
+    activity_summary: str = Field(
+        description="Resumen del ritmo y estado de actividad reciente"
+    )
+
+
+class AIAnalysis(BaseModel):
+    """Analisis tecnico estructurado generado mediante Inteligencia Artificial."""
+
+    summary: str = Field(
+        description="Resumen ejecutivo del estado del repositorio fundamentado en evidencia"
+    )
+    strengths: list[str] = Field(
+        default_factory=list,
+        description="Puntos fuertes del proyecto respaldados por datos",
+    )
+    concerns: list[Concern] = Field(
+        default_factory=list,
+        description="Puntos de atencion con evidencia demostrada",
+    )
+    recommendations: list[Recommendation] = Field(
+        default_factory=list,
+        description="Recomendaciones tecnicas accionables",
+    )
+    technical_overview: TechnicalOverview = Field(
+        description="Vision tecnica general de arquitectura, stack y actividad"
+    )
+
+
 class AnalysisResponse(BaseModel):
     """Respuesta completa del endpoint GET /analyze/{owner}/{repo}."""
 
@@ -425,6 +485,12 @@ class AnalysisResponse(BaseModel):
     )
     metrics: Metrics = Field(
         description="Metricas cuantitativas de archivos y estructura de codigo"
+    )
+    ai_analysis: AIAnalysis | None = Field(
+        default=None,
+        description=(
+            "Analisis tecnico estructurado por IA, o null si la IA no esta configurada o no disponible"
+        ),
     )
     cached: bool = Field(
         default=False,
@@ -610,6 +676,33 @@ class AnalysisResponse(BaseModel):
                         }
                     ],
                     "lines_of_code": None,
+                },
+                "ai_analysis": {
+                    "summary": "FastAPI es un framework web maduro, altamente probado y con activa mantencion.",
+                    "strengths": [
+                        "Suite de pruebas robusta con amplia cobertura de casos de uso.",
+                        "Documentacion extensa y actualizada en multiples idiomas.",
+                    ],
+                    "concerns": [
+                        {
+                            "title": "Configuracion de cobertura no detectada en raiz",
+                            "description": "No se identifico archivo .coveragerc explicito.",
+                            "severity": "low",
+                            "evidence": "CoverageSignal detected=False en archivos analizados.",
+                        }
+                    ],
+                    "recommendations": [
+                        {
+                            "title": "Asegurar reporte publico de cobertura",
+                            "description": "Integrar reporte de Codecov en el flujo de CI.",
+                            "priority": "low",
+                        }
+                    ],
+                    "technical_overview": {
+                        "architecture": "Framework basado en Starlette y Pydantic estructurado modularmente.",
+                        "stack": "Python, Starlette, Pydantic, Uvicorn, pytest.",
+                        "activity_summary": "Actividad constante con releases periodicos y gestion activa de PRs.",
+                    },
                 },
                 "cached": False,
             }

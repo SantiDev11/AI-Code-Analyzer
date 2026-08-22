@@ -77,6 +77,7 @@ def test_analyze_devuelve_la_estructura_esperada(client, fake_github):
         "activity",
         "quality",
         "metrics",
+        "ai_analysis",
         "cached",
     }
     assert set(body["repository"]) == {

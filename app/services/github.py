@@ -26,6 +26,7 @@ from app.schemas.repository import (
     ReleaseDetail,
     Repository,
 )
+from app.services.ai import analyze_with_ai
 from app.services.cache import TTLCache
 from app.services.metrics import TreeEntry, analyze_metrics
 from app.services.quality import analyze_quality
@@ -767,8 +768,32 @@ async def analyze_repository(
         entries, available=tree_available, truncated=tree_truncated
     )
 
+    repository = _to_repository(repository_data)
+    activity = _build_activity(
+        recent_commits,
+        issues,
+        pull_requests,
+        releases,
+        activity_days,
+        _utc_now(),
+    )
+
+    ai_analysis = await analyze_with_ai(
+        repository=repository,
+        languages=languages,
+        contributors=contributors,
+        recent_commits=recent_commits,
+        issues=issues,
+        pull_requests=pull_requests,
+        releases=releases,
+        latest_release=latest_release,
+        activity=activity,
+        quality=quality,
+        metrics=metrics,
+    )
+
     result = AnalysisResponse(
-        repository=_to_repository(repository_data),
+        repository=repository,
         languages=languages,
         contributors=contributors,
         contributors_count=len(contributors),
@@ -807,16 +832,10 @@ async def analyze_repository(
         prereleases_count=sum(1 for r in releases if r.prerelease),
         # Sin peticiones extra: la actividad se deduce de las cuatro listas
         # que acabamos de traer.
-        activity=_build_activity(
-            recent_commits,
-            issues,
-            pull_requests,
-            releases,
-            activity_days,
-            _utc_now(),
-        ),
+        activity=activity,
         quality=quality,
         metrics=metrics,
+        ai_analysis=ai_analysis,
     )
     _cache.set(key, result)
     return result

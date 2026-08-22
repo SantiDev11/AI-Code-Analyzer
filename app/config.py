@@ -21,6 +21,13 @@ class Settings(BaseSettings):
     # Dias naturales (UTC) que abarca el analisis de actividad.
     activity_days: int = 30
 
+    # Configuracion del proveedor de Inteligencia Artificial (OpenAI-compatible)
+    ai_provider: str = "openai"
+    ai_api_key: str | None = None
+    ai_model: str = "gpt-4o-mini"
+    ai_base_url: str = "https://api.openai.com/v1"
+    ai_timeout_seconds: float = 30.0
+
 
 # Instancia unica, importada por el resto de la aplicacion.
 settings = Settings()
