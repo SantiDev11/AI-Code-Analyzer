@@ -11,9 +11,13 @@ import httpx
 
 from app.config import settings
 from app.schemas.repository import AnalysisResponse, Repository
+from app.services.cache import TTLCache
 
 API_BASE = "https://api.github.com"
 TIMEOUT = httpx.Timeout(10.0)
+
+# Analisis ya calculados, reutilizados durante settings.cache_ttl_seconds.
+_cache: TTLCache[AnalysisResponse] = TTLCache(ttl_seconds=settings.cache_ttl_seconds)
 
 
 # --------------------------------------------------------------------------
@@ -187,12 +191,27 @@ def _to_repository(data: dict) -> Repository:
     )
 
 
+def _cache_key(owner: str, repo: str) -> str:
+    """Clave de cache. GitHub no distingue mayusculas en owner ni en repo."""
+    return f"{owner.lower()}/{repo.lower()}"
+
+
 async def analyze_repository(owner: str, repo: str) -> AnalysisResponse:
-    """Consulta GitHub y devuelve el analisis completo del repositorio.
+    """Devuelve el analisis completo del repositorio.
+
+    Si el mismo repositorio se consulto hace poco, se reutiliza el resultado
+    guardado en cache y no se llama a GitHub.
 
     Las tres peticiones son independientes entre si, por lo que se lanzan en
     paralelo: el tiempo total es el de la mas lenta, no la suma de las tres.
     """
+    key = _cache_key(owner, repo)
+
+    cached_result = _cache.get(key)
+    if cached_result is not None:
+        # Copia marcada como cacheada; la guardada conserva cached=False.
+        return cached_result.model_copy(update={"cached": True})
+
     async with _create_client() as client:
         try:
             repository_data, languages, contributors_count = await asyncio.gather(
@@ -205,8 +224,10 @@ async def analyze_repository(owner: str, repo: str) -> AnalysisResponse:
         except httpx.RequestError as error:
             raise GitHubUnavailable("No se ha podido conectar con GitHub") from error
 
-    return AnalysisResponse(
+    result = AnalysisResponse(
         repository=_to_repository(repository_data),
         languages=languages,
         contributors_count=contributors_count,
     )
+    _cache.set(key, result)
+    return result

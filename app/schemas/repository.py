@@ -40,6 +40,10 @@ class AnalysisResponse(BaseModel):
             "calcularlo (ocurre en repositorios con un historial enorme)"
         )
     )
+    cached: bool = Field(
+        default=False,
+        description="True si la respuesta viene de la cache y no de GitHub",
+    )
 
     model_config = {
         "json_schema_extra": {
@@ -57,6 +61,7 @@ class AnalysisResponse(BaseModel):
                 },
                 "languages": {"Python": 1245678, "HTML": 4321},
                 "contributors_count": 654,
+                "cached": False,
             }
         }
     }

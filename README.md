@@ -37,7 +37,8 @@ curl http://127.0.0.1:8000/analyze/encode/httpx
     "Python": 570031,
     "Shell": 2821
   },
-  "contributors_count": 247
+  "contributors_count": 247,
+  "cached": false
 }
 ```
 
@@ -81,6 +82,24 @@ GITHUB_TOKEN=ghp_tu_token_aqui
 
 El archivo `.env` esta en `.gitignore` y nunca se sube al repositorio.
 
+## Cache
+
+Cada analisis consume 3 peticiones de la cuota de GitHub, asi que los
+resultados se guardan en memoria durante 5 minutos por defecto. Una segunda
+consulta al mismo repositorio se responde al instante y sin gastar cuota:
+
+```
+GET /analyze/encode/httpx   ->  6242 ms   "cached": false
+GET /analyze/encode/httpx   ->     0 ms   "cached": true
+```
+
+El campo `cached` de la respuesta indica el origen de los datos. El tiempo de
+vida se ajusta con `CACHE_TTL_SECONDS` en el `.env`; con `0` se desactiva.
+
+La cache vive dentro del proceso: al reiniciar el servidor se vacia, y cada
+proceso tiene la suya. Es suficiente para un MVP; compartirla entre varios
+procesos exigiria algo externo como Redis.
+
 ## Ejecucion
 
 ```bash
@@ -109,7 +128,8 @@ AI-Code-Analyzer/
 │   ├── api/
 │   │   └── routes.py           # Endpoints y traduccion de errores a codigos HTTP
 │   ├── services/
-│   │   └── github.py           # Comunicacion con la GitHub REST API
+│   │   ├── github.py           # Comunicacion con la GitHub REST API
+│   │   └── cache.py            # Cache en memoria con expiracion (TTL)
 │   └── schemas/
 │       └── repository.py       # Modelos Pydantic: el contrato de la respuesta
 ├── tests/

@@ -33,6 +33,19 @@ CONTRIBUTORS_LINK_HEADER = (
 )
 
 
+@pytest.fixture(autouse=True)
+def clean_cache():
+    """Vacia la cache antes de cada test.
+
+    La cache es estado global del modulo: sin esto, un test dejaria datos
+    guardados que el siguiente encontraria, y el resultado dependeria del
+    orden de ejecucion.
+    """
+    github._cache.clear()
+    yield
+    github._cache.clear()
+
+
 @pytest.fixture
 def fake_github(monkeypatch) -> Callable[[Callable], None]:
     """Instala un GitHub simulado.

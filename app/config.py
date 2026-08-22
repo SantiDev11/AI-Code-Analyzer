@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     # Token opcional: sin el, GitHub permite 60 peticiones/hora por IP.
     github_token: str | None = None
 
+    # Segundos que se reutiliza un analisis ya calculado. Con 0 se desactiva.
+    cache_ttl_seconds: int = 300
+
 
 # Instancia unica, importada por el resto de la aplicacion.
 settings = Settings()
