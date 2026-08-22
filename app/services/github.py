@@ -19,6 +19,7 @@ from app.schemas.repository import (
     Contributor,
     DailyActivity,
     Issue,
+    Metrics,
     PullRequest,
     Quality,
     Release,
@@ -26,6 +27,7 @@ from app.schemas.repository import (
     Repository,
 )
 from app.services.cache import TTLCache
+from app.services.metrics import TreeEntry, analyze_metrics
 from app.services.quality import analyze_quality
 
 API_BASE = "https://api.github.com"
@@ -340,10 +342,10 @@ async def _fetch_recent_commits(
 
 async def _fetch_tree(
     client: httpx.AsyncClient, owner: str, repo: str, default_branch: str | None
-) -> tuple[list[str], bool, bool]:
+) -> tuple[list[TreeEntry], bool, bool]:
     """GET /repos/{owner}/{repo}/git/trees/{default_branch}?recursive=1
 
-    Devuelve (rutas, available, truncated).
+    Devuelve (entries, available, truncated).
     Consulta el arbol de archivos de la rama por defecto sin ejecutar nada del
     repositorio ni descargar dependencias o contenidos de archivos.
     """
@@ -371,13 +373,17 @@ async def _fetch_tree(
     try:
         data = response.json()
         tree_items = data.get("tree", [])
-        paths = [
-            item["path"]
+        entries = [
+            TreeEntry(
+                path=item["path"],
+                type=item.get("type", "blob"),
+                size=item.get("size"),
+            )
             for item in tree_items
             if isinstance(item, dict) and "path" in item
         ]
         truncated = bool(data.get("truncated", False))
-        return paths, True, truncated
+        return entries, True, truncated
     except Exception:
         return [], False, False
 
@@ -745,7 +751,7 @@ async def analyze_repository(
             )
 
             default_branch = repository_data.get("default_branch")
-            paths, tree_available, tree_truncated = await _fetch_tree(
+            entries, tree_available, tree_truncated = await _fetch_tree(
                 client, owner, repo, default_branch
             )
         except httpx.TimeoutException as error:
@@ -753,8 +759,12 @@ async def analyze_repository(
         except httpx.RequestError as error:
             raise GitHubUnavailable("No se ha podido conectar con GitHub") from error
 
+    blob_paths = [e.path for e in entries if e.type == "blob"]
     quality = analyze_quality(
-        paths, available=tree_available, truncated=tree_truncated
+        blob_paths, available=tree_available, truncated=tree_truncated
+    )
+    metrics = analyze_metrics(
+        entries, available=tree_available, truncated=tree_truncated
     )
 
     result = AnalysisResponse(
@@ -806,6 +816,7 @@ async def analyze_repository(
             _utc_now(),
         ),
         quality=quality,
+        metrics=metrics,
     )
     _cache.set(key, result)
     return result

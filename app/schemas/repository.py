@@ -298,6 +298,50 @@ class Quality(BaseModel):
     )
 
 
+class LargeFile(BaseModel):
+    """Un archivo de gran tamano dentro del repositorio."""
+
+    path: str = Field(description="Ruta relativa del archivo")
+    size_bytes: int = Field(description="Tamano del archivo en bytes")
+
+
+class Metrics(BaseModel):
+    """Metricas objetivas de la base de codigo a partir del Git Tree."""
+
+    tree_available: bool = Field(
+        description="True si el arbol de archivos estuvo disponible para calcular metricas"
+    )
+    tree_truncated: bool = Field(
+        description="True si GitHub trunco el arbol por superar el limite de elementos"
+    )
+    total_files: int = Field(description="Numero total de archivos en el repositorio")
+    total_directories: int = Field(
+        description="Numero total de directorios detectados en la estructura"
+    )
+    source_files: int = Field(
+        description="Numero de archivos de codigo fuente (excluyendo tests)"
+    )
+    test_files: int = Field(description="Numero de archivos de tests")
+    documentation_files: int = Field(
+        description="Numero de archivos de documentacion (README, docs, markdown, etc.)"
+    )
+    configuration_files: int = Field(
+        description="Numero de archivos de configuracion (linters, CI, build, etc.)"
+    )
+    file_extensions: dict[str, int] = Field(
+        default_factory=dict,
+        description="Recuento de archivos por extension (ej. {'.py': 42})",
+    )
+    largest_files: list[LargeFile] = Field(
+        default_factory=list,
+        description="Archivos mas pesados del repositorio por tamano en bytes",
+    )
+    lines_of_code: int | None = Field(
+        default=None,
+        description="Lineas de codigo (null: no se calculan sin descargar el contenido completo)",
+    )
+
+
 class AnalysisResponse(BaseModel):
     """Respuesta completa del endpoint GET /analyze/{owner}/{repo}."""
 
@@ -378,6 +422,9 @@ class AnalysisResponse(BaseModel):
     )
     quality: Quality = Field(
         description="Senales de calidad de codigo deducidas de la estructura de archivos"
+    )
+    metrics: Metrics = Field(
+        description="Metricas cuantitativas de archivos y estructura de codigo"
     )
     cached: bool = Field(
         default=False,
@@ -540,6 +587,29 @@ class AnalysisResponse(BaseModel):
                         "files": [".coveragerc"],
                     },
                     "undetermined_config": ["pyproject.toml"],
+                },
+                "metrics": {
+                    "tree_available": True,
+                    "tree_truncated": False,
+                    "total_files": 150,
+                    "total_directories": 24,
+                    "source_files": 110,
+                    "test_files": 12,
+                    "documentation_files": 5,
+                    "configuration_files": 8,
+                    "file_extensions": {
+                        ".py": 122,
+                        ".md": 5,
+                        ".toml": 2,
+                        ".yml": 2,
+                    },
+                    "largest_files": [
+                        {
+                            "path": "fastapi/applications.py",
+                            "size_bytes": 18450,
+                        }
+                    ],
+                    "lines_of_code": None,
                 },
                 "cached": False,
             }
