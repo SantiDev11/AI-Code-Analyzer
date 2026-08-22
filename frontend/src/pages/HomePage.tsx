@@ -8,6 +8,7 @@ import { RepositoryOverviewSkeleton } from '../components/overview/RepositoryOve
 import { LanguagesAnalysis } from '../components/LanguagesAnalysis';
 import { ContributorsAnalysis } from '../components/ContributorsAnalysis';
 import { RecentCommitsAnalysis } from '../components/RecentCommitsAnalysis';
+import { IssuesAnalysis } from '../components/IssuesAnalysis';
 import type { AnalysisResponse } from '../types';
 
 export const HomePage: React.FC = () => {
@@ -47,6 +48,12 @@ export const HomePage: React.FC = () => {
               contributorsCount={analysisResult.contributors_count}
             />
             <RecentCommitsAnalysis commits={analysisResult.recent_commits} />
+            <IssuesAnalysis
+              issues={analysisResult.issues}
+              issuesCount={analysisResult.issues_count}
+              openIssuesCount={analysisResult.open_issues_count}
+              closedIssuesCount={analysisResult.closed_issues_count}
+            />
           </>
         )}
 
