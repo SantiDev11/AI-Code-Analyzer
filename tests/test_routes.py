@@ -75,6 +75,7 @@ def test_analyze_devuelve_la_estructura_esperada(client, fake_github):
         "draft_releases_count",
         "prereleases_count",
         "activity",
+        "quality",
         "cached",
     }
     assert set(body["repository"]) == {
@@ -92,6 +93,7 @@ def test_analyze_devuelve_la_estructura_esperada(client, fake_github):
         "topics",
         "size_kb",
         "is_archived",
+        "default_branch",
     }
     assert body["contributors_count"] == len(body["contributors"])
 

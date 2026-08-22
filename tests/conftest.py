@@ -28,6 +28,7 @@ REPO_PAYLOAD = {
     "topics": ["http", "asyncio"],
     "size": 8594,
     "archived": False,
+    "default_branch": "master",
 }
 
 LANGUAGES_PAYLOAD = {"Python": 570031, "Shell": 2821}
@@ -190,6 +191,24 @@ RELEASES_PAYLOAD = [
 ]
 
 
+# Respuesta de GET /git/trees/{branch}?recursive=1
+TREE_PAYLOAD = {
+    "sha": "c5b97d5ae6c19d5c5df71a34c7fbeeda2479ccbc",
+    "url": "https://api.github.com/repos/encode/httpx/git/trees/master",
+    "tree": [
+        {"path": "README.md", "mode": "100644", "type": "blob", "sha": "123"},
+        {"path": "CONTRIBUTING.md", "mode": "100644", "type": "blob", "sha": "124"},
+        {"path": "tests/test_client.py", "mode": "100644", "type": "blob", "sha": "456"},
+        {"path": ".github/workflows/test.yml", "mode": "100644", "type": "blob", "sha": "789"},
+        {"path": ".flake8", "mode": "100644", "type": "blob", "sha": "790"},
+        {"path": ".editorconfig", "mode": "100644", "type": "blob", "sha": "791"},
+        {"path": "pyproject.toml", "mode": "100644", "type": "blob", "sha": "792"},
+        {"path": ".coveragerc", "mode": "100644", "type": "blob", "sha": "793"},
+    ],
+    "truncated": False,
+}
+
+
 @pytest.fixture(autouse=True)
 def clean_cache():
     """Vacia la cache antes de cada test.
@@ -255,5 +274,8 @@ def successful_handler(request: httpx.Request) -> httpx.Response:
 
     if path.endswith("/contributors"):
         return httpx.Response(200, json=CONTRIBUTORS_PAYLOAD)
+
+    if "/git/trees/" in path:
+        return httpx.Response(200, json=TREE_PAYLOAD)
 
     return httpx.Response(200, json=REPO_PAYLOAD)

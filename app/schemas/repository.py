@@ -40,6 +40,9 @@ class Repository(BaseModel):
     is_archived: bool = Field(
         description="True si el repositorio esta archivado (solo lectura)"
     )
+    default_branch: str = Field(
+        default="main", description="Rama por defecto del repositorio"
+    )
 
 
 class Contributor(BaseModel):
@@ -201,6 +204,100 @@ class Activity(BaseModel):
     )
 
 
+class QualitySignal(BaseModel):
+    """Senal de deteccion de una herramienta o archivo de configuracion.
+
+    detected es True si se encontraron archivos, False si el arbol completo
+    demuestra su ausencia, o null si el arbol no estaba disponible o fue truncado.
+    """
+
+    detected: bool | None = Field(
+        description="True si se detecto, False si no existe, null si el arbol no estaba disponible o fue truncado"
+    )
+    files: list[str] = Field(
+        default_factory=list,
+        description="Rutas relativas de los archivos detectados",
+    )
+
+
+class TestsSignal(BaseModel):
+    """Senal de deteccion del suite de tests."""
+
+    detected: bool | None = Field(
+        description="True si se detectaron tests, False si no existen, null si no disponible/truncado"
+    )
+    files: int = Field(
+        default=0,
+        description="Numero de archivos de test detectados",
+    )
+    directories: list[str] = Field(
+        default_factory=list,
+        description="Directorios que contienen tests",
+    )
+
+
+class DocumentationSignal(BaseModel):
+    """Senal de deteccion de documentacion del repositorio."""
+
+    readme: bool | None = Field(
+        description="True si se encontro README, False si no, null si no disponible/truncado"
+    )
+    contributing: bool | None = Field(
+        description="True si se encontro CONTRIBUTING, False si no, null si no disponible/truncado"
+    )
+    docs_directory: bool | None = Field(
+        description="True si existe directorio docs/, False si no, null si no disponible/truncado"
+    )
+    files: list[str] = Field(
+        default_factory=list,
+        description="Archivos principales de documentacion encontrados",
+    )
+
+
+class CoverageSignal(BaseModel):
+    """Senal de deteccion de cobertura de codigo."""
+
+    configured: bool | None = Field(
+        description="True si hay archivos de configuracion de cobertura, False si no, null si no disponible/truncado"
+    )
+    percentage: float | None = Field(
+        default=None,
+        description="Porcentaje de cobertura si esta disponible (null ya que no ejecutamos codigo)",
+    )
+    files: list[str] = Field(
+        default_factory=list,
+        description="Archivos de configuracion de cobertura encontrados",
+    )
+
+
+class Quality(BaseModel):
+    """Metricas e indicadores de calidad de codigo basados en la estructura de archivos."""
+
+    tree_available: bool = Field(
+        description="True si se pudo obtener el arbol de archivos de GitHub"
+    )
+    tree_truncated: bool = Field(
+        description="True si GitHub trunco el arbol de archivos por tamano"
+    )
+    files_scanned: int = Field(
+        description="Numero total de rutas analizadas en el arbol"
+    )
+    tests: TestsSignal = Field(description="Senales del suite de pruebas")
+    documentation: DocumentationSignal = Field(
+        description="Senales de documentacion"
+    )
+    ci: QualitySignal = Field(description="Integracion continua")
+    linting: QualitySignal = Field(description="Linters y analisis estatico")
+    formatting: QualitySignal = Field(description="Formateadores de codigo")
+    type_checking: QualitySignal = Field(description="Comprobadores de tipos")
+    dependencies: QualitySignal = Field(description="Gestion de dependencias")
+    coverage: CoverageSignal = Field(description="Configuracion de cobertura")
+    undetermined_config: list[str] = Field(
+        default_factory=list,
+        description="Archivos de configuracion genericos o indeterminados",
+    )
+
+
 class AnalysisResponse(BaseModel):
     """Respuesta completa del endpoint GET /analyze/{owner}/{repo}."""
 
@@ -279,6 +376,9 @@ class AnalysisResponse(BaseModel):
     activity: Activity = Field(
         description="Actividad reciente por dia, calculada con los datos ya analizados"
     )
+    quality: Quality = Field(
+        description="Senales de calidad de codigo deducidas de la estructura de archivos"
+    )
     cached: bool = Field(
         default=False,
         description="True si la respuesta viene de la cache y no de GitHub",
@@ -302,6 +402,7 @@ class AnalysisResponse(BaseModel):
                     "topics": ["python", "api", "async"],
                     "size_kb": 40123,
                     "is_archived": False,
+                    "default_branch": "main",
                 },
                 "languages": {"Python": 1245678, "HTML": 4321},
                 "contributors": [
@@ -397,6 +498,48 @@ class AnalysisResponse(BaseModel):
                             "releases": 1,
                         }
                     ],
+                },
+                "quality": {
+                    "tree_available": True,
+                    "tree_truncated": False,
+                    "files_scanned": 150,
+                    "tests": {
+                        "detected": True,
+                        "files": 12,
+                        "directories": ["tests"],
+                    },
+                    "documentation": {
+                        "readme": True,
+                        "contributing": True,
+                        "docs_directory": True,
+                        "files": ["readme.md", "contributing.md"],
+                    },
+                    "ci": {
+                        "detected": True,
+                        "files": [".github/workflows/test.yml"],
+                    },
+                    "linting": {
+                        "detected": True,
+                        "files": [".flake8", "ruff.toml"],
+                    },
+                    "formatting": {
+                        "detected": True,
+                        "files": [".editorconfig"],
+                    },
+                    "type_checking": {
+                        "detected": True,
+                        "files": ["mypy.ini"],
+                    },
+                    "dependencies": {
+                        "detected": True,
+                        "files": ["pyproject.toml"],
+                    },
+                    "coverage": {
+                        "configured": True,
+                        "percentage": None,
+                        "files": [".coveragerc"],
+                    },
+                    "undetermined_config": ["pyproject.toml"],
                 },
                 "cached": False,
             }

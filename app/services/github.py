@@ -20,11 +20,13 @@ from app.schemas.repository import (
     DailyActivity,
     Issue,
     PullRequest,
+    Quality,
     Release,
     ReleaseDetail,
     Repository,
 )
 from app.services.cache import TTLCache
+from app.services.quality import analyze_quality
 
 API_BASE = "https://api.github.com"
 TIMEOUT = httpx.Timeout(10.0)
@@ -336,6 +338,50 @@ async def _fetch_recent_commits(
     return _to_commits(response.json())
 
 
+async def _fetch_tree(
+    client: httpx.AsyncClient, owner: str, repo: str, default_branch: str | None
+) -> tuple[list[str], bool, bool]:
+    """GET /repos/{owner}/{repo}/git/trees/{default_branch}?recursive=1
+
+    Devuelve (rutas, available, truncated).
+    Consulta el arbol de archivos de la rama por defecto sin ejecutar nada del
+    repositorio ni descargar dependencias o contenidos de archivos.
+    """
+    if not default_branch:
+        return [], False, False
+
+    response = await client.get(
+        f"/repos/{owner}/{repo}/git/trees/{default_branch}",
+        params={"recursive": "1"},
+    )
+
+    # 404/409: arbol no encontrado o repositorio vacio sin commits.
+    if response.status_code in (404, 409):
+        return [], False, False
+
+    is_rate_limited = response.headers.get("X-RateLimit-Remaining") == "0"
+    if response.status_code in (403, 429) and is_rate_limited:
+        raise RateLimitExceeded(
+            "Cuota de la GitHub API agotada. Configura GITHUB_TOKEN para ampliarla"
+        )
+
+    if not response.is_success:
+        return [], False, False
+
+    try:
+        data = response.json()
+        tree_items = data.get("tree", [])
+        paths = [
+            item["path"]
+            for item in tree_items
+            if isinstance(item, dict) and "path" in item
+        ]
+        truncated = bool(data.get("truncated", False))
+        return paths, True, truncated
+    except Exception:
+        return [], False, False
+
+
 # --------------------------------------------------------------------------
 # API publica del servicio
 # --------------------------------------------------------------------------
@@ -616,6 +662,7 @@ def _to_repository(data: dict) -> Repository:
         topics=data.get("topics", []),
         size_kb=data["size"],
         is_archived=data["archived"],
+        default_branch=data.get("default_branch", "main"),
     )
 
 
@@ -656,8 +703,9 @@ async def analyze_repository(
     Si el mismo repositorio se consulto hace poco, se reutiliza el resultado
     guardado en cache y no se llama a GitHub.
 
-    Las ocho peticiones son independientes entre si, por lo que se lanzan en
-    paralelo: el tiempo total es el de la mas lenta, no la suma de las ocho.
+    Las peticiones iniciales son independientes entre si, por lo que se lanzan
+    en paralelo. Despues se consulta el arbol de archivos de la rama por
+    defecto obtenida de la metadata para deducir las senales de calidad.
     """
     key = _cache_key(
         owner,
@@ -695,10 +743,19 @@ async def analyze_repository(
                 _fetch_pull_requests(client, owner, repo, pulls_limit),
                 _fetch_releases(client, owner, repo, releases_limit),
             )
+
+            default_branch = repository_data.get("default_branch")
+            paths, tree_available, tree_truncated = await _fetch_tree(
+                client, owner, repo, default_branch
+            )
         except httpx.TimeoutException as error:
             raise GitHubUnavailable("GitHub ha tardado demasiado en responder") from error
         except httpx.RequestError as error:
             raise GitHubUnavailable("No se ha podido conectar con GitHub") from error
+
+    quality = analyze_quality(
+        paths, available=tree_available, truncated=tree_truncated
+    )
 
     result = AnalysisResponse(
         repository=_to_repository(repository_data),
@@ -748,6 +805,7 @@ async def analyze_repository(
             activity_days,
             _utc_now(),
         ),
+        quality=quality,
     )
     _cache.set(key, result)
     return result

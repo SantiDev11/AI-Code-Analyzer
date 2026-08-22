@@ -26,7 +26,7 @@ async def test_la_segunda_peticion_no_llama_a_github(fake_github):
     first = await github.analyze_repository("encode", "httpx")
     second = await github.analyze_repository("encode", "httpx")
 
-    assert len(calls) == 8, "el primer analisis usa los 8 endpoints de GitHub"
+    assert len(calls) == 9, "el primer analisis usa los 9 endpoints de GitHub"
     assert first.cached is False
     assert second.cached is True
     assert second.repository == first.repository
@@ -39,7 +39,7 @@ async def test_repositorios_distintos_no_comparten_cache(fake_github):
     await github.analyze_repository("encode", "httpx")
     await github.analyze_repository("fastapi", "fastapi")
 
-    assert len(calls) == 16
+    assert len(calls) == 18
 
 
 async def test_la_clave_ignora_mayusculas(fake_github):
@@ -50,7 +50,7 @@ async def test_la_clave_ignora_mayusculas(fake_github):
     await github.analyze_repository("encode", "httpx")
     result = await github.analyze_repository("ENCODE", "HTTPX")
 
-    assert len(calls) == 8
+    assert len(calls) == 9
     assert result.cached is True
 
 
@@ -70,7 +70,7 @@ async def test_al_caducar_se_vuelve_a_consultar_github(fake_github, monkeypatch)
     now[0] = 61.0
     result = await github.analyze_repository("encode", "httpx")
 
-    assert len(calls) == 16, "tras caducar se vuelve a preguntar a GitHub"
+    assert len(calls) == 18, "tras caducar se vuelve a preguntar a GitHub"
     assert result.cached is False
 
 

@@ -520,7 +520,7 @@ async def test_ventanas_distintas_no_comparten_cache(fake_github, reloj_fijo):
     await github.analyze_repository("encode", "httpx", activity_days=7)
     await github.analyze_repository("encode", "httpx", activity_days=30)
 
-    assert len(calls) == 16, "cada ventana vuelve a calcular el analisis"
+    assert len(calls) == 18, "cada ventana vuelve a calcular el analisis"
 
 
 # --------------------------------------------------------------------------
@@ -630,7 +630,7 @@ async def test_activity_no_anade_ninguna_llamada_a_github(fake_github, reloj_fij
 
     result = await github.analyze_repository("encode", "httpx")
 
-    assert len(calls) == 8, "los mismos 8 endpoints de antes de Activity"
+    assert len(calls) == 9, "los mismos 9 endpoints con Git Tree"
     assert result.activity is not None
 
 
