@@ -16,3 +16,11 @@ __pycache__/
 # Editores
 .vscode/
 .idea/
+
+# Node / Frontend
+node_modules/
+dist/
+.vite/
+frontend/node_modules/
+frontend/dist/
+
