@@ -120,6 +120,34 @@ class PullRequest(BaseModel):
     url: str = Field(description="URL del pull request en GitHub")
 
 
+class ReleaseDetail(BaseModel):
+    """Un release del historial del repositorio.
+
+    Es mas completo que `Release`, que solo describe la ultima version
+    publicada: aqui hacen falta los dos indicadores de estado para poder
+    contarlos por separado.
+
+    `draft` y `prerelease` son dos ejes independientes, no tres estados: un
+    release publicado puede estar marcado como prerelease, y un borrador
+    puede llevar prerelease sin haberse publicado nunca.
+    """
+
+    id: int = Field(description="Identificador del release en GitHub")
+    tag_name: str = Field(description="Etiqueta de la version, por ejemplo 'v1.2.0'")
+    name: str | None = Field(description="Titulo del release, o null si no tiene")
+    body: str | None = Field(description="Notas de la version, o null si no tiene")
+    draft: bool = Field(description="True si es un borrador que no se ha publicado")
+    prerelease: bool = Field(description="True si esta marcado como version previa")
+    created_at: datetime = Field(description="Fecha de creacion (UTC)")
+    published_at: datetime | None = Field(
+        description="Fecha de publicacion (UTC), o null si sigue siendo un borrador"
+    )
+    author: str | None = Field(
+        description="Quien lo publico, o null si la cuenta ya no existe"
+    )
+    url: str = Field(description="URL del release en GitHub")
+
+
 class AnalysisResponse(BaseModel):
     """Respuesta completa del endpoint GET /analyze/{owner}/{repo}."""
 
@@ -171,6 +199,29 @@ class AnalysisResponse(BaseModel):
     )
     merged_pull_requests_count: int = Field(
         description="Cuantos de esos pull requests se llegaron a mergear"
+    )
+    releases: list[ReleaseDetail] = Field(
+        description=(
+            "Historial de versiones en el orden que lo devuelve GitHub, del "
+            "mas reciente al mas antiguo. Es una muestra, no el historial "
+            "completo del repositorio"
+        )
+    )
+    releases_count: int = Field(
+        description="Cuantos releases incluye la lista `releases`"
+    )
+    published_releases_count: int = Field(
+        description=(
+            "Cuantos de esos releases estan publicados, es decir, no son "
+            "borradores. Las versiones previas tambien estan publicadas, asi "
+            "que cuentan aqui"
+        )
+    )
+    draft_releases_count: int = Field(
+        description="Cuantos de esos releases son borradores sin publicar"
+    )
+    prereleases_count: int = Field(
+        description="Cuantos de esos releases estan marcados como version previa"
     )
     cached: bool = Field(
         default=False,
@@ -253,6 +304,24 @@ class AnalysisResponse(BaseModel):
                 "open_pull_requests_count": 0,
                 "closed_pull_requests_count": 1,
                 "merged_pull_requests_count": 1,
+                "releases": [
+                    {
+                        "id": 178123456,
+                        "tag_name": "0.115.0",
+                        "name": "0.115.0",
+                        "body": "Correcciones menores y mejoras de rendimiento.",
+                        "draft": False,
+                        "prerelease": False,
+                        "created_at": "2024-04-20T09:30:00Z",
+                        "published_at": "2024-04-20T10:00:00Z",
+                        "author": "tiangolo",
+                        "url": "https://github.com/fastapi/fastapi/releases/tag/0.115.0",
+                    }
+                ],
+                "releases_count": 1,
+                "published_releases_count": 1,
+                "draft_releases_count": 0,
+                "prereleases_count": 0,
                 "cached": False,
             }
         }

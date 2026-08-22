@@ -14,6 +14,7 @@ a traves de la GitHub REST API.
 | `GET` | `/analyze/{owner}/{repo}?commits=N` | Igual, pidiendo N commits recientes |
 | `GET` | `/analyze/{owner}/{repo}?issues=N` | Igual, analizando N issues |
 | `GET` | `/analyze/{owner}/{repo}?pulls=N` | Igual, analizando N pull requests |
+| `GET` | `/analyze/{owner}/{repo}?releases=N` | Igual, analizando N releases |
 | `GET` | `/health` | Comprueba que el servicio esta vivo |
 | `GET` | `/docs` | Documentacion interactiva (Swagger UI) |
 
@@ -177,7 +178,7 @@ aislada y cambiar una capa sin tocar las demas.
 
 ## Como funciona por dentro
 
-Un analisis necesita siete endpoints distintos de GitHub, que se consultan **en
+Un analisis necesita ocho endpoints distintos de GitHub, que se consultan **en
 paralelo** con `asyncio.gather`:
 
 | Dato | Endpoint de GitHub |
@@ -186,6 +187,7 @@ paralelo** con `asyncio.gather`:
 | Lenguajes | `GET /repos/{owner}/{repo}/languages` |
 | Contributors | `GET /repos/{owner}/{repo}/contributors?per_page=10` |
 | Ultima release | `GET /repos/{owner}/{repo}/releases/latest` |
+| Historial de releases | `GET /repos/{owner}/{repo}/releases?per_page=10` |
 | Commits recientes | `GET /repos/{owner}/{repo}/commits?per_page=10` |
 | Issues | `GET /repos/{owner}/{repo}/issues?per_page=10&state=all` |
 | Pull requests | `GET /repos/{owner}/{repo}/pulls?per_page=10&state=all&sort=created&direction=desc` |
@@ -217,6 +219,30 @@ Un pull request mergeado esta cerrado, asi que suma en los dos ultimos a la
 vez: `merged` no es un tercer estado, sino algo que le pasa a uno cerrado. El
 campo `merged` de GitHub no sirve aqui, porque solo aparece al pedir un pull
 request de uno en uno; en el listado el unico rastro del merge es `merged_at`.
+
+De releases se analizan **10** por defecto, ajustables con `releases` (1-100).
+Se piden a `/releases`, que devuelve el historial entero incluidos los
+borradores; `/releases/latest` sigue usandose aparte para `latest_release`,
+porque ese endpoint ignora los borradores y responde la ultima version
+realmente publicada.
+
+Aqui pasa lo mismo que con los pull requests: `draft` y `prerelease` son dos
+indicadores independientes, no tres estados.
+
+| Contador | Como se calcula |
+|---|---|
+| `published_releases_count` | `draft == false`, **prereleases incluidas** |
+| `draft_releases_count` | `draft == true` |
+| `prereleases_count` | `prerelease == true` |
+
+Publicado significa exactamente "no es un borrador": GitHub deja
+`published_at` en `null` mientras lo sea. Una version previa publicada cuenta
+a la vez en `published_releases_count` y en `prereleases_count`, y un borrador
+marcado como version previa (GitHub lo permite) cuenta en los dos ultimos pero
+en ninguno esta publicado.
+
+La lista se devuelve **en el orden de GitHub**, sin reordenar: los borradores
+no tienen fecha de publicacion con la que compararlos.
 
 De commits recientes se devuelven **10** por defecto. La cantidad se ajusta con
 el parametro `commits` (entre 1 y 100, el maximo que sirve GitHub por pagina);

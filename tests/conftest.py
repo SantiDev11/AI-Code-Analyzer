@@ -144,6 +144,49 @@ PULLS_PAYLOAD = [
 ]
 
 
+# Respuesta de GET /releases, con los tres casos que hay que distinguir: uno
+# publicado y estable, uno publicado pero marcado como version previa, y un
+# borrador que nunca se publico y por eso tiene published_at en null.
+RELEASES_PAYLOAD = [
+    {
+        "id": 300,
+        "tag_name": "0.28.1",
+        "name": "Version 0.28.1",
+        "body": "Correcciones menores.",
+        "draft": False,
+        "prerelease": False,
+        "created_at": "2024-12-06T15:00:00Z",
+        "published_at": "2024-12-06T15:36:24Z",
+        "author": {"login": "tomchristie"},
+        "html_url": "https://github.com/encode/httpx/releases/tag/0.28.1",
+    },
+    {
+        "id": 290,
+        "tag_name": "0.29.0rc1",
+        "name": "Version 0.29.0 rc1",
+        "body": None,
+        "draft": False,
+        "prerelease": True,
+        "created_at": "2024-11-20T09:00:00Z",
+        "published_at": "2024-11-20T09:30:00Z",
+        "author": {"login": "florimondmanca"},
+        "html_url": "https://github.com/encode/httpx/releases/tag/0.29.0rc1",
+    },
+    {
+        "id": 280,
+        "tag_name": "0.30.0",
+        "name": None,
+        "body": None,
+        "draft": True,
+        "prerelease": False,
+        "created_at": "2024-11-01T08:00:00Z",
+        "published_at": None,
+        "author": {"login": "SantiDev11"},
+        "html_url": "https://github.com/encode/httpx/releases/tag/0.30.0",
+    },
+]
+
+
 @pytest.fixture(autouse=True)
 def clean_cache():
     """Vacia la cache antes de cada test.
@@ -191,6 +234,9 @@ def successful_handler(request: httpx.Request) -> httpx.Response:
 
     if path.endswith("/releases/latest"):
         return httpx.Response(200, json=RELEASE_PAYLOAD)
+
+    if path.endswith("/releases"):
+        return httpx.Response(200, json=RELEASES_PAYLOAD)
 
     if path.endswith("/commits"):
         return httpx.Response(200, json=COMMITS_PAYLOAD)

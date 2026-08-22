@@ -18,6 +18,7 @@ from app.schemas.repository import (
     Issue,
     PullRequest,
     Release,
+    ReleaseDetail,
     Repository,
 )
 from app.services.cache import TTLCache
@@ -40,6 +41,10 @@ MAX_ISSUES = 100
 # razon: GitHub no sirve mas de 100 por pagina.
 PULL_REQUESTS_LIMIT = 10
 MAX_PULL_REQUESTS = 100
+
+# Y lo mismo para el historial de releases.
+RELEASES_LIMIT = 10
+MAX_RELEASES = 100
 
 # Cuantos contribuidores se incluyen. GitHub los devuelve ya ordenados de mas a
 # menos contribuciones, asi que la primera pagina es directamente el top.
@@ -197,6 +202,31 @@ async def _fetch_latest_release(
     )
 
 
+async def _fetch_releases(
+    client: httpx.AsyncClient, owner: str, repo: str, limit: int
+) -> list[ReleaseDetail]:
+    """GET /repos/{owner}/{repo}/releases -> historial de versiones.
+
+    Convive con _fetch_latest_release sin sustituirlo: aquel pregunta por la
+    ultima version publicada a /releases/latest, que ignora los borradores.
+
+    Aqui no se ordena nada. GitHub ya devuelve la lista del mas reciente al
+    mas antiguo, y no hay un criterio mejor que imponer: los borradores no
+    tienen fecha de publicacion con la que compararlos.
+
+    Tampoco hay excepcion para el 404, a diferencia de /releases/latest, donde
+    significa que el repositorio no tiene ninguna version. En esta lista un
+    repositorio sin releases responde 200 con lista vacia, asi que un 404 es
+    un repositorio que no existe.
+    """
+    response = await client.get(
+        f"/repos/{owner}/{repo}/releases", params={"per_page": limit}
+    )
+
+    _raise_for_status(response)
+    return _to_releases(response.json())
+
+
 async def _fetch_issues(
     client: httpx.AsyncClient, owner: str, repo: str, limit: int
 ) -> list[Issue]:
@@ -339,6 +369,38 @@ def _to_issues(data: object) -> list[Issue]:
         ) from error
 
 
+def _to_releases(data: object) -> list[ReleaseDetail]:
+    """Traduce el historial de releases respetando el orden de GitHub.
+
+    Los campos que GitHub deja sin informar (titulo, notas, autor, fecha de
+    publicacion) se leen con cuidado: que a un release le falte uno no puede
+    tumbar el analisis entero.
+    """
+    try:
+        return [
+            ReleaseDetail(
+                id=item["id"],
+                tag_name=item["tag_name"],
+                name=item.get("name"),
+                body=item.get("body"),
+                draft=item["draft"],
+                prerelease=item["prerelease"],
+                created_at=item["created_at"],
+                # Null mientras sea un borrador. Es la fecha de publicacion
+                # real, distinta de created_at, que existe desde el principio.
+                published_at=item.get("published_at"),
+                # "author" es quien lo publico; null si la cuenta fue borrada.
+                author=(item.get("author") or {}).get("login"),
+                url=item["html_url"],
+            )
+            for item in data
+        ]
+    except (TypeError, KeyError, ValidationError) as error:
+        raise GitHubError(
+            f"Lista de releases con un formato inesperado: {error}"
+        ) from error
+
+
 def _to_pull_requests(data: object) -> list[PullRequest]:
     """Traduce los pull requests de GitHub, del mas reciente al mas antiguo.
 
@@ -453,7 +515,12 @@ def _to_repository(data: dict) -> Repository:
 
 
 def _cache_key(
-    owner: str, repo: str, commits_limit: int, issues_limit: int, pulls_limit: int
+    owner: str,
+    repo: str,
+    commits_limit: int,
+    issues_limit: int,
+    pulls_limit: int,
+    releases_limit: int,
 ) -> str:
     """Clave de cache. GitHub no distingue mayusculas en owner ni en repo.
 
@@ -463,7 +530,8 @@ def _cache_key(
     """
     return (
         f"{owner.lower()}/{repo.lower()}"
-        f"#commits={commits_limit}#issues={issues_limit}#pulls={pulls_limit}"
+        f"#commits={commits_limit}#issues={issues_limit}"
+        f"#pulls={pulls_limit}#releases={releases_limit}"
     )
 
 
@@ -473,16 +541,19 @@ async def analyze_repository(
     commits_limit: int = RECENT_COMMITS_LIMIT,
     issues_limit: int = ISSUES_LIMIT,
     pulls_limit: int = PULL_REQUESTS_LIMIT,
+    releases_limit: int = RELEASES_LIMIT,
 ) -> AnalysisResponse:
     """Devuelve el analisis completo del repositorio.
 
     Si el mismo repositorio se consulto hace poco, se reutiliza el resultado
     guardado en cache y no se llama a GitHub.
 
-    Las siete peticiones son independientes entre si, por lo que se lanzan en
-    paralelo: el tiempo total es el de la mas lenta, no la suma de las siete.
+    Las ocho peticiones son independientes entre si, por lo que se lanzan en
+    paralelo: el tiempo total es el de la mas lenta, no la suma de las ocho.
     """
-    key = _cache_key(owner, repo, commits_limit, issues_limit, pulls_limit)
+    key = _cache_key(
+        owner, repo, commits_limit, issues_limit, pulls_limit, releases_limit
+    )
 
     cached_result = _cache.get(key)
     if cached_result is not None:
@@ -499,6 +570,7 @@ async def analyze_repository(
                 recent_commits,
                 issues,
                 pull_requests,
+                releases,
             ) = await asyncio.gather(
                 _fetch_repository(client, owner, repo),
                 _fetch_languages(client, owner, repo),
@@ -507,6 +579,7 @@ async def analyze_repository(
                 _fetch_recent_commits(client, owner, repo, commits_limit),
                 _fetch_issues(client, owner, repo, issues_limit),
                 _fetch_pull_requests(client, owner, repo, pulls_limit),
+                _fetch_releases(client, owner, repo, releases_limit),
             )
         except httpx.TimeoutException as error:
             raise GitHubUnavailable("GitHub ha tardado demasiado en responder") from error
@@ -541,6 +614,16 @@ async def analyze_repository(
         merged_pull_requests_count=sum(
             1 for pr in pull_requests if pr.merged_at is not None
         ),
+        releases=releases,
+        # draft y prerelease tampoco son estados excluyentes. Publicado es
+        # exactamente "no es un borrador": GitHub deja published_at en null
+        # mientras lo sea. Una version previa publicada cuenta a la vez en
+        # published y en prereleases, igual que un pull request mergeado
+        # cuenta a la vez en cerrados y en mergeados.
+        releases_count=len(releases),
+        published_releases_count=sum(1 for r in releases if not r.draft),
+        draft_releases_count=sum(1 for r in releases if r.draft),
+        prereleases_count=sum(1 for r in releases if r.prerelease),
     )
     _cache.set(key, result)
     return result
