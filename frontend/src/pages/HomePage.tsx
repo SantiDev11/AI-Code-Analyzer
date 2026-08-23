@@ -9,6 +9,7 @@ import { LanguagesAnalysis } from '../components/LanguagesAnalysis';
 import { ContributorsAnalysis } from '../components/ContributorsAnalysis';
 import { RecentCommitsAnalysis } from '../components/RecentCommitsAnalysis';
 import { IssuesAnalysis } from '../components/IssuesAnalysis';
+import { PullRequestsAnalysis } from '../components/PullRequestsAnalysis';
 import type { AnalysisResponse } from '../types';
 
 export const HomePage: React.FC = () => {
@@ -53,6 +54,13 @@ export const HomePage: React.FC = () => {
               issuesCount={analysisResult.issues_count}
               openIssuesCount={analysisResult.open_issues_count}
               closedIssuesCount={analysisResult.closed_issues_count}
+            />
+            <PullRequestsAnalysis
+              pullRequests={analysisResult.pull_requests}
+              pullRequestsCount={analysisResult.pull_requests_count}
+              openPullRequestsCount={analysisResult.open_pull_requests_count}
+              closedPullRequestsCount={analysisResult.closed_pull_requests_count}
+              mergedPullRequestsCount={analysisResult.merged_pull_requests_count}
             />
           </>
         )}
