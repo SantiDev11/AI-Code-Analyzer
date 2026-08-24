@@ -2711,3 +2711,226 @@ button, input {
   color: var(--color-text-secondary);
 }
 
+/* --------------------------------------------------------------------------
+   Code Quality Analysis Section
+   -------------------------------------------------------------------------- */
+
+.quality-section {
+  padding-top: 0;
+  padding-bottom: 3rem;
+}
+
+.quality-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 2rem;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.quality-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.quality-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.quality-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.quality-subtitle {
+  font-size: 0.9375rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.quality-empty {
+  padding: 1.5rem 0;
+}
+
+/* Grid de Señales de Calidad */
+.quality-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .quality-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.quality-grid-item {
+  display: flex;
+}
+
+.quality-signal-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  width: 100%;
+  padding: 1.125rem 1.25rem;
+  background-color: var(--color-surface-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.quality-signal-card:hover {
+  border-color: var(--color-border-focus);
+  transform: translateY(-1px);
+}
+
+.quality-signal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.quality-signal-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+/* Badges de Estado */
+.quality-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.quality-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.quality-status-badge.is-detected {
+  color: var(--color-success);
+  background-color: var(--color-success-subtle);
+  border: 1px solid rgba(63, 185, 80, 0.35);
+}
+
+.quality-status-dot.is-detected {
+  background-color: var(--color-success);
+}
+
+.quality-status-badge.is-not-detected {
+  color: var(--color-text-secondary);
+  background-color: rgba(139, 148, 158, 0.15);
+  border: 1px solid rgba(139, 148, 158, 0.3);
+}
+
+.quality-status-dot.is-not-detected {
+  background-color: var(--color-text-muted);
+}
+
+.quality-status-badge.is-unknown {
+  color: var(--color-text-muted);
+  background-color: rgba(110, 118, 129, 0.1);
+  border: 1px solid rgba(110, 118, 129, 0.25);
+}
+
+.quality-status-dot.is-unknown {
+  background-color: var(--color-text-muted);
+}
+
+/* Cuerpo y Detalles */
+.quality-signal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.quality-signal-desc {
+  font-size: 0.8125rem;
+  margin: 0;
+}
+
+.quality-signal-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+}
+
+.quality-detail-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.quality-detail-label {
+  color: var(--color-text-muted);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.quality-detail-value {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-weight: 500;
+  text-align: right;
+  min-width: 0;
+}
+
+.quality-files-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.25rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.quality-file-tag {
+  padding: 0.1rem 0.35rem;
+  font-size: 0.6875rem;
+  font-family: var(--font-mono);
+  color: var(--color-accent);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+
