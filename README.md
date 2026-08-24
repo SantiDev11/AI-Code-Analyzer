@@ -253,6 +253,8 @@ AI_TIMEOUT_SECONDS=30.0
 
 ## Instalación y Ejecución
 
+### 1. Backend (FastAPI)
+
 Requiere **Python 3.12+**.
 
 ```bash
@@ -270,16 +272,53 @@ uvicorn app.main:app --reload
 
 Accede a <http://127.0.0.1:8000/docs> para explorar y probar la API en Swagger UI.
 
+### 2. Frontend (React + TypeScript + Vite)
+
+Requiere **Node.js 18+** y **npm**.
+
+```bash
+# 1. Navegar al directorio frontend e instalar dependencias
+cd frontend
+npm install
+
+# 2. Configurar variables de entorno (opcional)
+# Por defecto el proxy de Vite redirige las llamadas locales a http://localhost:8000
+cp .env.example .env
+# VITE_API_BASE_URL=http://localhost:8000
+
+# 3. Iniciar servidor de desarrollo frontend
+npm run dev
+
+# 4. Compilar bundle de producción
+npm run build
+
+# 5. Comprobación estricta de tipos
+npm run typecheck
+```
+
+Accede a <http://localhost:3000> para interactuar con la interfaz del analizador.
+
 ---
 
 ## Ejecución de Tests
+
+### Tests del Backend (pytest)
 
 ```bash
 pip install -r requirements-dev.txt
 pytest
 ```
 
-Todas las pruebas utilizan transportes simulados (`httpx.MockTransport`): no consumen cuota de la GitHub API ni realizan peticiones reales al proveedor de IA.
+Todas las pruebas del backend utilizan transportes simulados (`httpx.MockTransport`): no consumen cuota de la GitHub API ni realizan peticiones reales al proveedor de IA.
+
+### Tests del Frontend (Vitest)
+
+```bash
+cd frontend
+npm test
+```
+
+Las suites de pruebas del frontend renderizan los componentes de forma estática con datos mockeados y verifican accesibilidad semántica, ausencia de valores nulos o inválidos y gestión de estados.
 
 ---
 
