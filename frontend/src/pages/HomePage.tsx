@@ -10,6 +10,7 @@ import { ContributorsAnalysis } from '../components/ContributorsAnalysis';
 import { RecentCommitsAnalysis } from '../components/RecentCommitsAnalysis';
 import { IssuesAnalysis } from '../components/IssuesAnalysis';
 import { PullRequestsAnalysis } from '../components/PullRequestsAnalysis';
+import { ReleasesAnalysis } from '../components/ReleasesAnalysis';
 import type { AnalysisResponse } from '../types';
 
 export const HomePage: React.FC = () => {
@@ -61,6 +62,13 @@ export const HomePage: React.FC = () => {
               openPullRequestsCount={analysisResult.open_pull_requests_count}
               closedPullRequestsCount={analysisResult.closed_pull_requests_count}
               mergedPullRequestsCount={analysisResult.merged_pull_requests_count}
+            />
+            <ReleasesAnalysis
+              releases={analysisResult.releases}
+              releasesCount={analysisResult.releases_count}
+              publishedReleasesCount={analysisResult.published_releases_count}
+              draftReleasesCount={analysisResult.draft_releases_count}
+              prereleasesCount={analysisResult.prereleases_count}
             />
           </>
         )}
