@@ -2386,3 +2386,328 @@ button, input {
 .release-unpublished-note {
   font-style: italic;
 }
+
+/* --------------------------------------------------------------------------
+   Repository Activity Analysis Section
+   -------------------------------------------------------------------------- */
+
+.activity-section {
+  padding-top: 0;
+  padding-bottom: 3rem;
+}
+
+.activity-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 2rem;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.activity-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.activity-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.activity-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.activity-subtitle {
+  font-size: 0.9375rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* Global Summary Stats */
+.activity-stats-container {
+  width: 100%;
+}
+
+.activity-stats-list {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+}
+
+@media (max-width: 900px) {
+  .activity-stats-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 500px) {
+  .activity-stats-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+.activity-stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 1rem 1.25rem;
+  background-color: var(--color-surface-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.activity-stat-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.activity-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.activity-dot.commits {
+  background-color: #2f81f7;
+}
+
+.activity-dot.issues {
+  background-color: var(--color-success);
+}
+
+.activity-dot.prs {
+  background-color: #a371f7;
+}
+
+.activity-dot.prs-closed {
+  background-color: #f85149;
+}
+
+.activity-dot.releases {
+  background-color: var(--color-warning);
+}
+
+.activity-stat-value {
+  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+}
+
+.activity-stat-value.commits-text {
+  color: #2f81f7;
+}
+
+.activity-stat-value.issues-text {
+  color: var(--color-success);
+}
+
+.activity-stat-value.prs-text {
+  color: #a371f7;
+}
+
+.activity-stat-value.releases-text {
+  color: var(--color-warning);
+}
+
+.activity-empty {
+  padding: 1.5rem 0;
+}
+
+/* Daily Activity List */
+.activity-daily-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.activity-daily-title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.activity-daily-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.activity-day-item {
+  display: flex;
+}
+
+.activity-day-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 1rem 1.25rem;
+  background-color: var(--color-surface-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.activity-day-card:hover {
+  border-color: var(--color-border-focus);
+  transform: translateY(-1px);
+}
+
+.activity-day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.activity-day-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.activity-day-date {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.activity-day-short-date {
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  color: var(--color-text-muted);
+  background-color: var(--color-surface);
+  padding: 0.125rem 0.375rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.activity-day-total-badge {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+}
+
+.activity-day-total-badge strong {
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+}
+
+/* Activity Bar */
+.activity-bar-container {
+  width: 100%;
+}
+
+.activity-bar-track {
+  width: 100%;
+  height: 8px;
+  background-color: var(--color-surface);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  border: 1px solid var(--color-border-subtle);
+}
+
+.activity-bar-fill {
+  height: 100%;
+  display: flex;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  transition: width 0.3s ease-in-out;
+}
+
+.activity-bar-segment {
+  height: 100%;
+}
+
+.activity-bar-segment.segment-commits {
+  background-color: #2f81f7;
+}
+
+.activity-bar-segment.segment-issues {
+  background-color: var(--color-success);
+}
+
+.activity-bar-segment.segment-prs {
+  background-color: #a371f7;
+}
+
+.activity-bar-segment.segment-releases {
+  background-color: var(--color-warning);
+}
+
+/* Daily Breakdown Metrics */
+.activity-day-breakdown {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0.5rem 0 0 0;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+@media (max-width: 768px) {
+  .activity-day-breakdown {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .activity-day-breakdown {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.activity-day-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.activity-day-stat-label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.activity-day-stat-value {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  color: var(--color-text-secondary);
+}
+

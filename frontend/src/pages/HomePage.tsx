@@ -11,6 +11,7 @@ import { RecentCommitsAnalysis } from '../components/RecentCommitsAnalysis';
 import { IssuesAnalysis } from '../components/IssuesAnalysis';
 import { PullRequestsAnalysis } from '../components/PullRequestsAnalysis';
 import { ReleasesAnalysis } from '../components/ReleasesAnalysis';
+import { RepositoryActivityAnalysis } from '../components/RepositoryActivityAnalysis';
 import type { AnalysisResponse } from '../types';
 
 export const HomePage: React.FC = () => {
@@ -70,6 +71,7 @@ export const HomePage: React.FC = () => {
               draftReleasesCount={analysisResult.draft_releases_count}
               prereleasesCount={analysisResult.prereleases_count}
             />
+            <RepositoryActivityAnalysis activity={analysisResult.activity} />
           </>
         )}
 
