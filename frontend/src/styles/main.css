@@ -3242,3 +3242,353 @@ button, input {
   color: var(--color-text-primary);
   white-space: nowrap;
 }
+
+/* --------------------------------------------------------------------------
+   AI Analysis Section
+   -------------------------------------------------------------------------- */
+
+.ai-section {
+  padding-top: 0;
+  padding-bottom: 3rem;
+}
+
+.ai-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  padding: 2rem;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  position: relative;
+}
+
+.ai-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ai-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.ai-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.ai-subtitle {
+  font-size: 0.9375rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* Resumen Ejecutivo Principal */
+.ai-summary-article {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  background-color: var(--color-surface-card);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-accent);
+  border-radius: var(--radius-md);
+}
+
+.ai-summary-title {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.ai-summary-text {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: var(--color-text-secondary);
+  word-break: break-word;
+}
+
+/* Bloques genericos */
+.ai-block {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.ai-block-title {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+/* Puntos Fuertes (Strengths) */
+.ai-strengths-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ai-strength-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background-color: var(--color-surface-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.ai-strength-bullet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  background-color: var(--color-success-subtle);
+  color: var(--color-success);
+  font-weight: 700;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.ai-strength-text {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--color-text-primary);
+  word-break: break-word;
+}
+
+/* Grids de Concerns y Recommendations */
+.ai-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .ai-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ai-concern-item,
+.ai-recommendation-item {
+  display: flex;
+}
+
+.ai-concern-card,
+.ai-recommendation-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 1.25rem;
+  background-color: var(--color-surface-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.ai-concern-card:hover,
+.ai-recommendation-card:hover {
+  border-color: var(--color-border-focus);
+  transform: translateY(-1px);
+}
+
+.ai-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.ai-card-title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.ai-card-description {
+  margin: 0;
+  font-size: 0.84375rem;
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+  word-break: break-word;
+}
+
+/* Badges de Severidad y Prioridad */
+.ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.71875rem;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ai-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ai-badge.is-low {
+  color: #58a6ff;
+  background-color: rgba(56, 139, 253, 0.15);
+  border: 1px solid rgba(56, 139, 253, 0.35);
+}
+
+.ai-badge.is-low .ai-badge-dot {
+  background-color: #58a6ff;
+}
+
+.ai-badge.is-medium {
+  color: var(--color-warning);
+  background-color: rgba(210, 153, 34, 0.15);
+  border: 1px solid rgba(210, 153, 34, 0.35);
+}
+
+.ai-badge.is-medium .ai-badge-dot {
+  background-color: var(--color-warning);
+}
+
+.ai-badge.is-high {
+  color: #f85149;
+  background-color: rgba(248, 81, 73, 0.15);
+  border: 1px solid rgba(248, 81, 73, 0.35);
+}
+
+.ai-badge.is-high .ai-badge-dot {
+  background-color: #f85149;
+}
+
+/* Caja de Evidencia */
+.ai-evidence-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+  padding: 0.625rem 0.75rem;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.ai-evidence-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ai-evidence-text {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  word-break: break-word;
+}
+
+/* Vision Tecnica General */
+.ai-overview-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+}
+
+@media (max-width: 900px) {
+  .ai-overview-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ai-overview-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  background-color: var(--color-surface-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.ai-overview-term {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ai-overview-desc {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  word-break: break-word;
+}
+
+/* Estado no disponible */
+.ai-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.75rem;
+  padding: 2.5rem 1.5rem;
+}
+
+.ai-unavailable-icon {
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  background-color: var(--color-surface-card);
+  border: 1px solid var(--color-border);
+}
+
+.ai-unavailable-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
