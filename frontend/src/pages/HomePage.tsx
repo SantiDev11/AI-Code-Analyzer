@@ -13,6 +13,7 @@ import { PullRequestsAnalysis } from '../components/PullRequestsAnalysis';
 import { ReleasesAnalysis } from '../components/ReleasesAnalysis';
 import { RepositoryActivityAnalysis } from '../components/RepositoryActivityAnalysis';
 import { CodeQualityAnalysis } from '../components/CodeQualityAnalysis';
+import { CodeMetricsAnalysis } from '../components/CodeMetricsAnalysis';
 import type { AnalysisResponse } from '../types';
 
 export const HomePage: React.FC = () => {
@@ -74,6 +75,7 @@ export const HomePage: React.FC = () => {
             />
             <RepositoryActivityAnalysis activity={analysisResult.activity} />
             <CodeQualityAnalysis quality={analysisResult.quality} />
+            <CodeMetricsAnalysis metrics={analysisResult.metrics} />
           </>
         )}
 
