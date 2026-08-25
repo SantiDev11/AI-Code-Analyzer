@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Contributor } from '../types';
+import { formatNumber } from '../utils/format';
 
 interface ContributorsAnalysisProps {
   contributors: Contributor[] | null | undefined;
@@ -106,7 +107,7 @@ export const ContributorsAnalysis: React.FC<ContributorsAnalysisProps> = ({
                           )}
                         </h3>
                         <p className="contributor-commits">
-                          <strong>{(contributor.contributions || 0).toLocaleString()}</strong>{' '}
+                          <strong>{formatNumber(contributor.contributions || 0)}</strong>{' '}
                           <span>{(contributor.contributions === 1) ? 'commit atribuido' : 'commits atribuidos'}</span>
                         </p>
                       </div>

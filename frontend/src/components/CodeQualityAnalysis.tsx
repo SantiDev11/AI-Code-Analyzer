@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatNumber } from '../utils/format';
 import type {
   Quality,
   QualitySignal,
@@ -106,7 +107,7 @@ export const CodeQualityAnalysis: React.FC<CodeQualityAnalysisProps> = ({ qualit
               </h2>
             </div>
             <p className="quality-subtitle">
-              Señales objetivas de configuración, pruebas, documentación y automatización deducidas del árbol de archivos ({quality.files_scanned.toLocaleString()} archivos analizados).
+              Señales objetivas de configuración, pruebas, documentación y automatización deducidas del árbol de archivos ({formatNumber(quality.files_scanned)} archivos analizados).
             </p>
           </header>
 
@@ -123,7 +124,7 @@ export const CodeQualityAnalysis: React.FC<CodeQualityAnalysisProps> = ({ qualit
                     <dl className="quality-signal-details">
                       <div className="quality-detail-row">
                         <dt className="quality-detail-label">Archivos de test:</dt>
-                        <dd className="quality-detail-value">{tests.files.toLocaleString()}</dd>
+                        <dd className="quality-detail-value">{formatNumber(tests.files)}</dd>
                       </div>
                       {tests.directories && tests.directories.length > 0 && (
                         <div className="quality-detail-row">

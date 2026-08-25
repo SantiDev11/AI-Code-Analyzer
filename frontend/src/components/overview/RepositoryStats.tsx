@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Repository } from '../../types';
+import { formatNumber } from '../../utils/format';
 
 interface RepositoryStatsProps {
   repository: Repository;
@@ -27,7 +28,7 @@ export const RepositoryStats: React.FC<RepositoryStatsProps> = ({ repository }) 
             </svg>
             <span>Stars</span>
           </dt>
-          <dd className="repo-stat-value">{repository.stars.toLocaleString()}</dd>
+          <dd className="repo-stat-value">{formatNumber(repository.stars)}</dd>
         </div>
 
         <div className="repo-stat-card">
@@ -51,7 +52,7 @@ export const RepositoryStats: React.FC<RepositoryStatsProps> = ({ repository }) 
             </svg>
             <span>Forks</span>
           </dt>
-          <dd className="repo-stat-value">{repository.forks.toLocaleString()}</dd>
+          <dd className="repo-stat-value">{formatNumber(repository.forks)}</dd>
         </div>
 
         <div className="repo-stat-card">
@@ -74,7 +75,7 @@ export const RepositoryStats: React.FC<RepositoryStatsProps> = ({ repository }) 
             </svg>
             <span>Open Issues</span>
           </dt>
-          <dd className="repo-stat-value">{repository.open_issues.toLocaleString()}</dd>
+          <dd className="repo-stat-value">{formatNumber(repository.open_issues)}</dd>
         </div>
 
         <div className="repo-stat-card">

@@ -3,6 +3,7 @@ import type { Repository } from '../../types';
 import { RepositoryHeader } from './RepositoryHeader';
 import { RepositoryStats } from './RepositoryStats';
 import { RepositoryTopics } from './RepositoryTopics';
+import { formatNumber } from '../../utils/format';
 
 interface RepositoryOverviewProps {
   repository: Repository;
@@ -43,7 +44,7 @@ export const RepositoryOverview: React.FC<RepositoryOverviewProps> = ({ reposito
             <dl className="repo-meta-list">
               <div className="repo-meta-item">
                 <dt>Tamaño:</dt>
-                <dd>{repository.size_kb.toLocaleString()} KB</dd>
+                <dd>{formatNumber(repository.size_kb)} KB</dd>
               </div>
               <div className="repo-meta-item">
                 <dt>Creado:</dt>

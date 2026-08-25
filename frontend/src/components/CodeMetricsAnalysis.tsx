@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Metrics, LargeFile } from '../types';
-import { formatBytes } from '../utils/format';
+import { formatBytes, formatNumber } from '../utils/format';
 
 interface CodeMetricsAnalysisProps {
   metrics: Metrics | null | undefined;
@@ -32,7 +32,7 @@ function formatCount(value: number | null | undefined): string {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     return 'No disponible';
   }
-  return Math.trunc(value).toLocaleString();
+  return formatNumber(Math.trunc(value));
 }
 
 function safeNumber(value: number | null | undefined): number {

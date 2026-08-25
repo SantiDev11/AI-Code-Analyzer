@@ -1,5 +1,6 @@
 import React from 'react';
 import type { ReleaseDetail } from '../types';
+import { formatNumber } from '../utils/format';
 
 interface ReleasesAnalysisProps {
   releases: ReleaseDetail[] | null | undefined;
@@ -212,7 +213,7 @@ export const ReleasesAnalysis: React.FC<ReleasesAnalysisProps> = ({
             <dl className="releases-stats-list">
               <div className="releases-stat-card">
                 <dt className="releases-stat-label">Total Releases</dt>
-                <dd className="releases-stat-value">{totalCount.toLocaleString()}</dd>
+                <dd className="releases-stat-value">{formatNumber(totalCount)}</dd>
               </div>
 
               <div className="releases-stat-card">
@@ -221,7 +222,7 @@ export const ReleasesAnalysis: React.FC<ReleasesAnalysisProps> = ({
                   <span>Published</span>
                 </dt>
                 <dd className="releases-stat-value published-text">
-                  {publishedCount.toLocaleString()}
+                  {formatNumber(publishedCount)}
                 </dd>
               </div>
 
@@ -230,7 +231,7 @@ export const ReleasesAnalysis: React.FC<ReleasesAnalysisProps> = ({
                   <span className="releases-status-dot draft" aria-hidden="true" />
                   <span>Draft</span>
                 </dt>
-                <dd className="releases-stat-value draft-text">{draftCount.toLocaleString()}</dd>
+                <dd className="releases-stat-value draft-text">{formatNumber(draftCount)}</dd>
               </div>
 
               <div className="releases-stat-card">
@@ -239,7 +240,7 @@ export const ReleasesAnalysis: React.FC<ReleasesAnalysisProps> = ({
                   <span>Prereleases</span>
                 </dt>
                 <dd className="releases-stat-value prerelease-text">
-                  {prereleaseCount.toLocaleString()}
+                  {formatNumber(prereleaseCount)}
                 </dd>
               </div>
             </dl>

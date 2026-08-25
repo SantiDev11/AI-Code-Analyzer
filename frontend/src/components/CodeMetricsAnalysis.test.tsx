@@ -57,8 +57,8 @@ describe('CodeMetricsAnalysis Component', () => {
     const html = renderToStaticMarkup(<CodeMetricsAnalysis metrics={mockMetrics} />);
 
     expect(html).toContain('>Files</dt>');
-    // El separador de miles depende del locale del entorno (1,240 / 1.240).
-    expect(html).toMatch(/1[.,]240/);
+    // Formato es-ES fijo, con agrupacion de miles siempre activa.
+    expect(html).toContain('1.240');
   });
 
   test('3. Muestra el total de directorios (total_directories)', () => {
@@ -163,7 +163,8 @@ describe('CodeMetricsAnalysis Component', () => {
     const withLoc: Metrics = { ...mockMetrics, lines_of_code: 84213 };
     const html = renderToStaticMarkup(<CodeMetricsAnalysis metrics={withLoc} />);
 
-    expect(html).toMatch(/84[.,]213/);
+    // Formato es-ES fijo: a partir de cinco digitos si hay separador de miles.
+    expect(html).toContain('84.213');
     expect(html).toContain('LOC');
     expect(html).not.toContain('Lines of code unavailable');
   });

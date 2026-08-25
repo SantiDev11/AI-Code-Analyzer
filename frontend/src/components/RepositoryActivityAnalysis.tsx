@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Activity, DailyActivity } from '../types';
+import { formatNumber } from '../utils/format';
 
 interface RepositoryActivityAnalysisProps {
   activity: Activity | null | undefined;
@@ -73,7 +74,7 @@ const DailyActivityItem: React.FC<DailyActivityItemProps> = ({ day, maxEvents })
             </span>
           </div>
           <span className="activity-day-total-badge" aria-label={`Total de ${totalDayEvents} eventos este día`}>
-            <strong>{totalDayEvents.toLocaleString()}</strong> {totalDayEvents === 1 ? 'evento' : 'eventos'}
+            <strong>{formatNumber(totalDayEvents)}</strong> {totalDayEvents === 1 ? 'evento' : 'eventos'}
           </span>
         </header>
 
@@ -124,7 +125,7 @@ const DailyActivityItem: React.FC<DailyActivityItemProps> = ({ day, maxEvents })
               <span className="activity-dot commits" aria-hidden="true" />
               <span>Commits</span>
             </dt>
-            <dd className="activity-day-stat-value">{commits.toLocaleString()}</dd>
+            <dd className="activity-day-stat-value">{formatNumber(commits)}</dd>
           </div>
 
           <div className="activity-day-stat">
@@ -132,7 +133,7 @@ const DailyActivityItem: React.FC<DailyActivityItemProps> = ({ day, maxEvents })
               <span className="activity-dot issues" aria-hidden="true" />
               <span>Issues</span>
             </dt>
-            <dd className="activity-day-stat-value">{issues.toLocaleString()}</dd>
+            <dd className="activity-day-stat-value">{formatNumber(issues)}</dd>
           </div>
 
           <div className="activity-day-stat">
@@ -140,7 +141,7 @@ const DailyActivityItem: React.FC<DailyActivityItemProps> = ({ day, maxEvents })
               <span className="activity-dot prs" aria-hidden="true" />
               <span>PRs Abiertos</span>
             </dt>
-            <dd className="activity-day-stat-value">{prsOpened.toLocaleString()}</dd>
+            <dd className="activity-day-stat-value">{formatNumber(prsOpened)}</dd>
           </div>
 
           <div className="activity-day-stat">
@@ -148,7 +149,7 @@ const DailyActivityItem: React.FC<DailyActivityItemProps> = ({ day, maxEvents })
               <span className="activity-dot prs-closed" aria-hidden="true" />
               <span>PRs Cerrados</span>
             </dt>
-            <dd className="activity-day-stat-value">{prsClosed.toLocaleString()}</dd>
+            <dd className="activity-day-stat-value">{formatNumber(prsClosed)}</dd>
           </div>
 
           <div className="activity-day-stat">
@@ -156,7 +157,7 @@ const DailyActivityItem: React.FC<DailyActivityItemProps> = ({ day, maxEvents })
               <span className="activity-dot releases" aria-hidden="true" />
               <span>Releases</span>
             </dt>
-            <dd className="activity-day-stat-value">{releases.toLocaleString()}</dd>
+            <dd className="activity-day-stat-value">{formatNumber(releases)}</dd>
           </div>
         </dl>
       </article>
@@ -226,7 +227,7 @@ export const RepositoryActivityAnalysis: React.FC<RepositoryActivityAnalysisProp
                   <span className="activity-dot commits" aria-hidden="true" />
                   <span>Commits</span>
                 </dt>
-                <dd className="activity-stat-value commits-text">{totalCommits.toLocaleString()}</dd>
+                <dd className="activity-stat-value commits-text">{formatNumber(totalCommits)}</dd>
               </div>
 
               <div className="activity-stat-card">
@@ -234,7 +235,7 @@ export const RepositoryActivityAnalysis: React.FC<RepositoryActivityAnalysisProp
                   <span className="activity-dot issues" aria-hidden="true" />
                   <span>Issues</span>
                 </dt>
-                <dd className="activity-stat-value issues-text">{totalIssues.toLocaleString()}</dd>
+                <dd className="activity-stat-value issues-text">{formatNumber(totalIssues)}</dd>
               </div>
 
               <div className="activity-stat-card">
@@ -242,7 +243,7 @@ export const RepositoryActivityAnalysis: React.FC<RepositoryActivityAnalysisProp
                   <span className="activity-dot prs" aria-hidden="true" />
                   <span>Pull Requests</span>
                 </dt>
-                <dd className="activity-stat-value prs-text">{totalPullRequests.toLocaleString()}</dd>
+                <dd className="activity-stat-value prs-text">{formatNumber(totalPullRequests)}</dd>
               </div>
 
               <div className="activity-stat-card">
@@ -250,7 +251,7 @@ export const RepositoryActivityAnalysis: React.FC<RepositoryActivityAnalysisProp
                   <span className="activity-dot releases" aria-hidden="true" />
                   <span>Releases</span>
                 </dt>
-                <dd className="activity-stat-value releases-text">{totalReleases.toLocaleString()}</dd>
+                <dd className="activity-stat-value releases-text">{formatNumber(totalReleases)}</dd>
               </div>
             </dl>
           </div>

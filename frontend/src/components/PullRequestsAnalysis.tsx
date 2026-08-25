@@ -1,5 +1,6 @@
 import React from 'react';
 import type { PullRequest } from '../types';
+import { formatNumber } from '../utils/format';
 
 interface PullRequestsAnalysisProps {
   pullRequests: PullRequest[] | null | undefined;
@@ -65,7 +66,7 @@ export const PullRequestsAnalysis: React.FC<PullRequestsAnalysisProps> = ({
             <dl className="prs-stats-list">
               <div className="prs-stat-card">
                 <dt className="prs-stat-label">Total en Muestra</dt>
-                <dd className="prs-stat-value">{totalCount.toLocaleString()}</dd>
+                <dd className="prs-stat-value">{formatNumber(totalCount)}</dd>
               </div>
 
               <div className="prs-stat-card">
@@ -73,7 +74,7 @@ export const PullRequestsAnalysis: React.FC<PullRequestsAnalysisProps> = ({
                   <span className="prs-status-dot open" aria-hidden="true" />
                   <span>Abiertos</span>
                 </dt>
-                <dd className="prs-stat-value open-text">{openCount.toLocaleString()}</dd>
+                <dd className="prs-stat-value open-text">{formatNumber(openCount)}</dd>
               </div>
 
               <div className="prs-stat-card">
@@ -81,7 +82,7 @@ export const PullRequestsAnalysis: React.FC<PullRequestsAnalysisProps> = ({
                   <span className="prs-status-dot closed" aria-hidden="true" />
                   <span>Cerrados</span>
                 </dt>
-                <dd className="prs-stat-value closed-text">{closedCount.toLocaleString()}</dd>
+                <dd className="prs-stat-value closed-text">{formatNumber(closedCount)}</dd>
               </div>
 
               <div className="prs-stat-card">
@@ -89,7 +90,7 @@ export const PullRequestsAnalysis: React.FC<PullRequestsAnalysisProps> = ({
                   <span className="prs-status-dot merged" aria-hidden="true" />
                   <span>Mergeados</span>
                 </dt>
-                <dd className="prs-stat-value merged-text">{mergedCount.toLocaleString()}</dd>
+                <dd className="prs-stat-value merged-text">{formatNumber(mergedCount)}</dd>
               </div>
             </dl>
           </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Issue } from '../types';
+import { formatNumber } from '../utils/format';
 
 interface IssuesAnalysisProps {
   issues: Issue[] | null | undefined;
@@ -61,7 +62,7 @@ export const IssuesAnalysis: React.FC<IssuesAnalysisProps> = ({
             <dl className="issues-stats-list">
               <div className="issues-stat-card">
                 <dt className="issues-stat-label">Total en Muestra</dt>
-                <dd className="issues-stat-value">{totalCount.toLocaleString()}</dd>
+                <dd className="issues-stat-value">{formatNumber(totalCount)}</dd>
               </div>
 
               <div className="issues-stat-card">
@@ -69,7 +70,7 @@ export const IssuesAnalysis: React.FC<IssuesAnalysisProps> = ({
                   <span className="issues-status-dot open" aria-hidden="true" />
                   <span>Abiertos</span>
                 </dt>
-                <dd className="issues-stat-value open-text">{openCount.toLocaleString()}</dd>
+                <dd className="issues-stat-value open-text">{formatNumber(openCount)}</dd>
               </div>
 
               <div className="issues-stat-card">
@@ -77,7 +78,7 @@ export const IssuesAnalysis: React.FC<IssuesAnalysisProps> = ({
                   <span className="issues-status-dot closed" aria-hidden="true" />
                   <span>Cerrados</span>
                 </dt>
-                <dd className="issues-stat-value closed-text">{closedCount.toLocaleString()}</dd>
+                <dd className="issues-stat-value closed-text">{formatNumber(closedCount)}</dd>
               </div>
             </dl>
           </div>
