@@ -1,5 +1,7 @@
 # AI-Code-Analyzer
 
+[![CI](https://github.com/SantiDev11/AI-Code-Analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/SantiDev11/AI-Code-Analyzer/actions/workflows/ci.yml)
+
 Backend en FastAPI que realiza un análisis técnico integral de repositorios públicos de GitHub combinando datos de la GitHub REST API, señales de calidad de código, métricas cuantitativas y un análisis técnico estructurado generado por Inteligencia Artificial.
 
 ---
@@ -435,6 +437,56 @@ npm test
 ```
 
 Las suites de pruebas del frontend renderizan los componentes de forma estática con datos mockeados y verifican accesibilidad semántica, ausencia de valores nulos o inválidos y gestión de estados.
+
+---
+
+## Integración Continua (CI)
+
+El pipeline vive en [`.github/workflows/ci.yml`](.github/workflows/ci.yml) y se ejecuta en GitHub Actions.
+
+### Cuándo se ejecuta
+
+- En cada **push** a `main`.
+- En cada **pull request** dirigida a `main`.
+
+Un push nuevo sobre la misma referencia cancela la ejecución anterior que siga en curso (`concurrency`), para no acumular builds obsoletos.
+
+### Qué ejecuta
+
+Tres jobs. `backend` y `frontend` corren **en paralelo**; `docker` solo arranca si ambos han pasado, para no gastar minutos construyendo imágenes de un commit que ya se sabe roto.
+
+| Job        | Runtime     | Pasos                                                        |
+| ---------- | ----------- | ------------------------------------------------------------ |
+| `backend`  | Python 3.12 | `pip install -r requirements-dev.txt` → `pytest`              |
+| `frontend` | Node 22     | `npm ci` → `npm test` → `npm run typecheck` → `npm run build` |
+| `docker`   | —           | `docker compose config` → `docker compose build`              |
+
+Las versiones no son arbitrarias: **Python 3.12** es la de la imagen de producción (`Dockerfile`) y **Node 22** la de la etapa de build de `frontend/Dockerfile`. La CI valida lo que realmente se despliega.
+
+El caché de dependencias se apoya en los lockfiles (`requirements*.txt` y `frontend/package-lock.json`): al cambiar cualquiera de ellos, la clave de caché cambia y se reinstala desde cero.
+
+### Qué hace fallar el pipeline
+
+| Job        | Condición de fallo                                                                   |
+| ---------- | ------------------------------------------------------------------------------------ |
+| `backend`  | Cualquier test de `pytest` que falle, o un error instalando dependencias.             |
+| `frontend` | Un test de Vitest en rojo, un error de tipos en `tsc`, o un fallo de `vite build`.    |
+| `docker`   | `compose.yaml` inválido, o que alguna de las dos imágenes no construya.               |
+
+`npm run build` ejecuta `tsc && vite build`, así que un error de tipos también rompe el build además del paso de `typecheck`.
+
+### Secretos
+
+**La CI no necesita ningún secreto.** No se declaran `GITHUB_TOKEN` ni `AI_API_KEY` en el workflow: los tests del backend sustituyen el cliente HTTP por transportes simulados (`tests/conftest.py`), de modo que **no se llama a la GitHub API ni a ningún proveedor de IA** durante la ejecución.
+
+El job de `docker` solo construye las imágenes; **no publica nada** en ningún registro.
+
+Los permisos del token automático están reducidos al mínimo:
+
+```yaml
+permissions:
+  contents: read
+```
 
 ---
 
