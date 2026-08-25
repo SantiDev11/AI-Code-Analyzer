@@ -287,9 +287,12 @@ cd frontend
 npm install
 
 # 2. Configurar variables de entorno (opcional)
-# Por defecto el proxy de Vite redirige las llamadas locales a http://localhost:8000
+# Por defecto el proxy de Vite redirige las llamadas locales a http://localhost:8000,
+# así que VITE_API_BASE_URL puede quedarse vacía.
 cp .env.example .env
-# VITE_API_BASE_URL=http://localhost:8000
+# Solo si el backend vive en otro dominio, con su URL pública y accesible
+# desde el navegador. El valor se incrusta en el bundle: nunca pongas secretos.
+# VITE_API_BASE_URL=https://api.example.com
 
 # 3. Iniciar servidor de desarrollo frontend
 npm run dev
