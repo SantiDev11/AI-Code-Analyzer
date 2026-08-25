@@ -1,0 +1,79 @@
+# ---------------------------------------------------------------------------
+# AI-Code-Analyzer — entorno local completo (backend + frontend).
+#
+#   docker compose up --build     Levanta ambos servicios
+#   docker compose down           Los detiene y elimina
+#
+# Flujo real de una peticion:
+#
+#   Navegador -> http://localhost:3000 (nginx del frontend)
+#                        |  /analyze/... relativo al mismo origen
+#                        v
+#              http://backend:8000 (red interna de Docker)
+#
+# El navegador nunca resuelve el hostname `backend`: solo nginx lo hace, ya
+# dentro de la red de Compose.
+#
+# Los secretos se leen del archivo .env de la raiz (que git ignora) y se
+# inyectan como variables de entorno del contenedor. Nunca se copian a la
+# imagen ni quedan en el historial de capas.
+# ---------------------------------------------------------------------------
+name: ai-code-analyzer
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ai-code-analyzer-backend:local
+    environment:
+      # Privadas: solo viven dentro del contenedor del backend.
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      AI_API_KEY: ${AI_API_KEY:-}
+      # Configuracion no sensible.
+      AI_PROVIDER: ${AI_PROVIDER:-openai}
+      AI_MODEL: ${AI_MODEL:-gpt-4o-mini}
+      AI_BASE_URL: ${AI_BASE_URL:-https://api.openai.com/v1}
+      AI_TIMEOUT_SECONDS: ${AI_TIMEOUT_SECONDS:-30.0}
+      CACHE_TTL_SECONDS: ${CACHE_TTL_SECONDS:-300}
+      ACTIVITY_DAYS: ${ACTIVITY_DAYS:-30}
+      # Origenes permitidos por CORS. Solo hacen falta para llamadas directas
+      # al puerto 8000 (Swagger, curl, `npm run dev`): a traves de nginx la
+      # peticion es del mismo origen y no pasa por CORS.
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173}
+    ports:
+      # Expuesto para Swagger UI y llamadas directas a la API.
+      - "8000:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request, sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).status == 200 else 1)
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Vacio a proposito: el bundle usa rutas relativas y nginx hace de
+        # proxy. Las VITE_* son publicas, nunca pongas secretos aqui.
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+    image: ai-code-analyzer-frontend:local
+    ports:
+      - "3000:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:8080/"]
+      interval: 30s
+      timeout: 5s
+      start_period: 5s
+      retries: 3
+    restart: unless-stopped

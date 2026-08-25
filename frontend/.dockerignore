@@ -1,0 +1,29 @@
+# Contexto de build del frontend.
+
+# Dependencias y artefactos del host: se reinstalan y recompilan dentro de la imagen.
+node_modules
+dist
+.vite
+
+# Secretos y entornos locales (las VITE_* llegan por build arg)
+.env
+.env.*
+!.env.example
+
+# Control de versiones
+.git
+.gitignore
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Editores y sistema
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Artefactos varios
+*.log
+coverage

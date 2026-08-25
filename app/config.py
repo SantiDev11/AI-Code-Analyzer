@@ -21,12 +21,29 @@ class Settings(BaseSettings):
     # Dias naturales (UTC) que abarca el analisis de actividad.
     activity_days: int = 30
 
+    # Origenes permitidos por CORS, separados por comas. En despliegue se
+    # define por entorno (CORS_ALLOWED_ORIGINS); el valor por defecto cubre
+    # el desarrollo local con Vite y con Docker Compose.
+    cors_allowed_origins: str = (
+        "http://localhost:3000,http://127.0.0.1:3000,"
+        "http://localhost:5173,http://127.0.0.1:5173"
+    )
+
     # Configuracion del proveedor de Inteligencia Artificial (OpenAI-compatible)
     ai_provider: str = "openai"
     ai_api_key: str | None = None
     ai_model: str = "gpt-4o-mini"
     ai_base_url: str = "https://api.openai.com/v1"
     ai_timeout_seconds: float = 30.0
+
+    @property
+    def cors_origins(self) -> list[str]:
+        """Lista de origenes permitidos, ya limpia de espacios y vacios."""
+        return [
+            origin.strip()
+            for origin in self.cors_allowed_origins.split(",")
+            if origin.strip()
+        ]
 
 
 # Instancia unica, importada por el resto de la aplicacion.

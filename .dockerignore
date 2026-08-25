@@ -1,0 +1,49 @@
+# Contexto de build del backend: solo entran app/ y requirements.txt.
+
+# Control de versiones
+.git
+.gitignore
+.gitattributes
+
+# Secretos y entornos locales
+.env
+.env.*
+!.env.example
+.venv
+venv
+
+# Python
+__pycache__
+**/__pycache__
+*.py[cod]
+*.egg-info
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# Tests y configuracion de tests (no se ejecutan dentro de la imagen)
+tests
+pytest.ini
+
+# Frontend: se construye con su propio contexto (frontend/Dockerfile)
+frontend
+
+# Docker
+Dockerfile
+.dockerignore
+compose.yaml
+docker-compose.yml
+
+# Editores y sistema
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Artefactos varios
+*.log
+coverage
+htmlcov
+dist
+build
+node_modules

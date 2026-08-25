@@ -239,6 +239,9 @@ CACHE_TTL_SECONDS=300
 # Dias naturales por defecto para el analisis de actividad
 ACTIVITY_DAYS=30
 
+# Origenes permitidos por CORS, separados por comas y sin espacios. Nunca se usa "*"
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173
+
 # Configuracion de Inteligencia Artificial (OpenAI-compatible)
 AI_PROVIDER=openai
 AI_API_KEY=
@@ -297,6 +300,119 @@ npm run typecheck
 ```
 
 Accede a <http://localhost:3000> para interactuar con la interfaz del analizador.
+
+---
+
+## Ejecución con Docker
+
+Empaqueta el proyecto completo (backend + frontend) sin instalar Python ni Node en la máquina.
+
+### Prerequisitos
+
+- **Docker Engine 24+** con el plugin **Docker Compose v2** (`docker compose`, no `docker-compose`).
+- Docker Desktop en marcha si estás en Windows o macOS.
+
+### Arquitectura
+
+Dos imágenes independientes coordinadas por `compose.yaml`:
+
+| Servicio   | Imagen base                       | Puerto interno | Puerto publicado |
+| ---------- | --------------------------------- | -------------- | ---------------- |
+| `backend`  | `python:3.12-slim` + Uvicorn      | 8000           | `8000`           |
+| `frontend` | `nginx-unprivileged` (multi-stage) | 8080           | `3000`           |
+
+El frontend se compila con Node en una etapa de build y el bundle estático resultante lo sirve nginx. El servidor de desarrollo de Vite **no** se usa en runtime.
+
+El navegador solo habla con `http://localhost:3000`. Las llamadas a `/analyze/...` y `/health` salen relativas a ese mismo origen y nginx las reenvía al contenedor `backend` por la red interna de Docker:
+
+```
+Navegador ──► localhost:3000 (nginx) ──► backend:8000 (red interna)
+```
+
+El hostname `backend` solo lo resuelve nginx dentro de la red de Compose; el navegador nunca lo necesita.
+
+### Comandos
+
+```bash
+# Construir las imágenes
+docker compose build
+
+# Levantar (en primer plano, con logs)
+docker compose up
+
+# Construir y levantar en un solo paso
+docker compose up --build
+
+# Levantar en segundo plano
+docker compose up -d
+
+# Ver el estado y los healthchecks
+docker compose ps
+
+# Detener y eliminar los contenedores
+docker compose down
+```
+
+### URLs
+
+| Recurso            | URL                             |
+| ------------------ | ------------------------------- |
+| Frontend           | <http://localhost:3000>         |
+| Backend (API)      | <http://localhost:8000>         |
+| Swagger UI         | <http://localhost:8000/docs>    |
+| Health check       | <http://localhost:8000/health>  |
+
+`/health` también es accesible desde el origen del frontend en <http://localhost:3000/health>, ya que nginx hace de proxy. Es el mismo endpoint que usa el `healthcheck` del contenedor: el `frontend` no arranca hasta que el `backend` responde sano.
+
+### Variables de entorno
+
+Compose lee el archivo `.env` de la raíz (ignorado por git) y **inyecta** sus valores como variables de entorno del contenedor. Ese archivo nunca se copia dentro de la imagen: `.dockerignore` lo excluye del contexto de build, así que ningún secreto queda en las capas ni en el historial de la imagen.
+
+Todas las variables son opcionales; sin ninguna de ellas los contenedores arrancan igualmente y el análisis de GitHub funciona (con el rate limit anónimo y sin IA).
+
+**Variables secretas — solo backend, nunca salen del contenedor:**
+
+| Variable       | Descripción                                                      |
+| -------------- | ---------------------------------------------------------------- |
+| `GITHUB_TOKEN` | Token personal de GitHub. Eleva el rate limit de 60 a 5000 req/h. |
+| `AI_API_KEY`   | Clave del proveedor de IA. Sin ella, `ai_analysis` devuelve `null`. |
+
+**Variables de configuración — no sensibles, también solo backend:**
+
+`AI_PROVIDER`, `AI_MODEL`, `AI_BASE_URL`, `AI_TIMEOUT_SECONDS`, `CACHE_TTL_SECONDS`, `ACTIVITY_DAYS`, `CORS_ALLOWED_ORIGINS`.
+
+**Variables públicas — frontend:**
+
+| Variable             | Descripción                                                                |
+| -------------------- | -------------------------------------------------------------------------- |
+| `VITE_API_BASE_URL`  | URL base del backend. Vacía por defecto: el bundle usa rutas relativas.     |
+
+> ⚠️ **Las variables `VITE_*` no son secretas.** Vite las sustituye por su valor literal *durante el build*, quedando incrustadas en el JavaScript que descarga el navegador. Cualquiera puede leerlas abriendo las DevTools. Nunca pongas en una `VITE_*` un token, una clave de API ni ningún otro secreto: para eso están `GITHUB_TOKEN` y `AI_API_KEY`, que viven exclusivamente en el backend.
+
+#### Cómo se resuelve `VITE_API_BASE_URL`
+
+Se pasa como `build arg` al `frontend/Dockerfile`, porque el valor debe existir en el momento de compilar (cambiarlo exige reconstruir la imagen, no basta con reiniciar el contenedor).
+
+- **Vacía (por defecto con Compose):** el cliente hace peticiones relativas (`/analyze/...`) y nginx las reenvía al backend. Mismo origen, sin CORS.
+- **Con valor** (por ejemplo `https://api.midominio.com`): el navegador llama directamente a esa URL. Debe ser una URL **pública, alcanzable desde el navegador** — nunca `http://backend:8000`, que solo existe dentro de la red de Docker. En ese caso hay que añadir el origen del frontend a `CORS_ALLOWED_ORIGINS`.
+
+### CORS
+
+El backend configura los orígenes permitidos con `CORS_ALLOWED_ORIGINS` (lista separada por comas). **Nunca se usa `allow_origins=["*"]`**; los métodos se limitan a `GET` y `OPTIONS`.
+
+Por defecto se permiten `http://localhost:3000` y `http://localhost:5173` (más sus variantes `127.0.0.1`), que cubren tanto el frontend de Docker como `npm run dev`.
+
+Con la configuración estándar de Compose el navegador nunca hace peticiones cross-origin, porque nginx sirve la interfaz y la API bajo el mismo origen. CORS solo entra en juego en llamadas directas al puerto 8000 (Swagger UI, `curl`, `npm run dev`) o si publicas el backend en un dominio distinto, en cuyo caso basta con ajustar la variable:
+
+```bash
+CORS_ALLOWED_ORIGINS=https://midominio.com
+```
+
+### Notas de seguridad
+
+- Ambos contenedores ejecutan como usuario **sin privilegios** (`appuser` uid 1000 en el backend; nginx unprivileged en el frontend).
+- Ni `.env`, ni `.venv`, ni `node_modules` del host entran en el contexto de build (`.dockerignore` y `frontend/.dockerignore`).
+- No hay ningún secreto escrito en los `Dockerfile` ni en `compose.yaml`: solo referencias `${VARIABLE}`.
 
 ---
 

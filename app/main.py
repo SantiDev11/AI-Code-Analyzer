@@ -12,6 +12,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import router
+from app.config import settings
 
 # Archivos del frontend (HTML y CSS), servidos por la propia aplicacion.
 STATIC_DIR = Path(__file__).parent / "static"
@@ -22,13 +23,9 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# Origenes permitidos para desarrollo local con Vite
-ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
+# Origenes permitidos, configurables con CORS_ALLOWED_ORIGINS. Por defecto
+# cubren el desarrollo local (Vite y Docker Compose). Nunca se usa "*".
+ALLOWED_ORIGINS = settings.cors_origins
 
 app.add_middleware(
     CORSMiddleware,
