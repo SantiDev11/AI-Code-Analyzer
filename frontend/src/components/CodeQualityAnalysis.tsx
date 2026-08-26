@@ -91,6 +91,18 @@ export const CodeQualityAnalysis: React.FC<CodeQualityAnalysisProps> = ({ qualit
   const typeCheckingStatus = resolveStatus(typeChecking?.detected);
   const dependenciesStatus = resolveStatus(dependencies?.detected);
 
+  const totalSignals = 8;
+  const detectedCount = [
+    testsStatus === 'detected',
+    docsStatus === 'detected',
+    coverageStatus === 'detected',
+    ciStatus === 'detected',
+    lintingStatus === 'detected',
+    formattingStatus === 'detected',
+    typeCheckingStatus === 'detected',
+    dependenciesStatus === 'detected',
+  ].filter(Boolean).length;
+
   return (
     <section
       className="quality-section"
@@ -100,7 +112,13 @@ export const CodeQualityAnalysis: React.FC<CodeQualityAnalysisProps> = ({ qualit
       <div className="analyzer-container">
         <div className="quality-card">
           <header className="quality-header">
-            <span className="repo-section-badge">Salud y Estándares</span>
+            <div className="quality-header-top">
+              <span className="repo-section-badge">Salud y Estándares</span>
+              <div className="quality-summary-pill" aria-label={`${detectedCount} de ${totalSignals} estándares detectados`}>
+                <span className="quality-summary-count">{detectedCount}/{totalSignals}</span>
+                <span className="quality-summary-text">Señales Detectadas</span>
+              </div>
+            </div>
             <div className="quality-title-row">
               <h2 id="quality-heading" className="quality-title">
                 Calidad de Código
@@ -116,7 +134,16 @@ export const CodeQualityAnalysis: React.FC<CodeQualityAnalysisProps> = ({ qualit
             <li className="quality-grid-item">
               <article className="quality-signal-card">
                 <header className="quality-signal-header">
-                  <h3 className="quality-signal-title">Tests</h3>
+                  <div className="quality-signal-title-group">
+                    <span className="quality-signal-icon" aria-hidden="true">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <path d="m9 15 2 2 4-4"/>
+                      </svg>
+                    </span>
+                    <h3 className="quality-signal-title">Tests</h3>
+                  </div>
                   <StatusBadge status={testsStatus} />
                 </header>
                 <div className="quality-signal-body">
@@ -152,7 +179,16 @@ export const CodeQualityAnalysis: React.FC<CodeQualityAnalysisProps> = ({ qualit
             <li className="quality-grid-item">
               <article className="quality-signal-card">
                 <header className="quality-signal-header">
-                  <h3 className="quality-signal-title">Documentación</h3>
+                  <div className="quality-signal-title-group">
+                    <span className="quality-signal-icon" aria-hidden="true">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+                        <path d="M6 6h10"/>
+                        <path d="M6 10h10"/>
+                      </svg>
+                    </span>
+                    <h3 className="quality-signal-title">Documentación</h3>
+                  </div>
                   <StatusBadge status={docsStatus} />
                 </header>
                 <div className="quality-signal-body">
@@ -202,7 +238,15 @@ export const CodeQualityAnalysis: React.FC<CodeQualityAnalysisProps> = ({ qualit
             <li className="quality-grid-item">
               <article className="quality-signal-card">
                 <header className="quality-signal-header">
-                  <h3 className="quality-signal-title">Cobertura de Tests</h3>
+                  <div className="quality-signal-title-group">
+                    <span className="quality-signal-icon" aria-hidden="true">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        <path d="m9 12 2 2 4-4"/>
+                      </svg>
+                    </span>
+                    <h3 className="quality-signal-title">Cobertura de Tests</h3>
+                  </div>
                   <StatusBadge status={coverageStatus} />
                 </header>
                 <div className="quality-signal-body">
@@ -242,7 +286,15 @@ export const CodeQualityAnalysis: React.FC<CodeQualityAnalysisProps> = ({ qualit
             <li className="quality-grid-item">
               <article className="quality-signal-card">
                 <header className="quality-signal-header">
-                  <h3 className="quality-signal-title">Integración Continua (CI)</h3>
+                  <div className="quality-signal-title-group">
+                    <span className="quality-signal-icon" aria-hidden="true">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                      </svg>
+                    </span>
+                    <h3 className="quality-signal-title">Integración Continua (CI)</h3>
+                  </div>
                   <StatusBadge status={ciStatus} />
                 </header>
                 <div className="quality-signal-body">
@@ -278,7 +330,14 @@ export const CodeQualityAnalysis: React.FC<CodeQualityAnalysisProps> = ({ qualit
             <li className="quality-grid-item">
               <article className="quality-signal-card">
                 <header className="quality-signal-header">
-                  <h3 className="quality-signal-title">Linters y Análisis Estático</h3>
+                  <div className="quality-signal-title-group">
+                    <span className="quality-signal-icon" aria-hidden="true">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                      </svg>
+                    </span>
+                    <h3 className="quality-signal-title">Linters y Análisis Estático</h3>
+                  </div>
                   <StatusBadge status={lintingStatus} />
                 </header>
                 <div className="quality-signal-body">
@@ -314,7 +373,16 @@ export const CodeQualityAnalysis: React.FC<CodeQualityAnalysisProps> = ({ qualit
             <li className="quality-grid-item">
               <article className="quality-signal-card">
                 <header className="quality-signal-header">
-                  <h3 className="quality-signal-title">Formateadores de Código</h3>
+                  <div className="quality-signal-title-group">
+                    <span className="quality-signal-icon" aria-hidden="true">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="4 7 4 4 20 4 20 7"/>
+                        <line x1="9" y1="20" x2="15" y2="20"/>
+                        <line x1="12" y1="4" x2="12" y2="20"/>
+                      </svg>
+                    </span>
+                    <h3 className="quality-signal-title">Formateadores de Código</h3>
+                  </div>
                   <StatusBadge status={formattingStatus} />
                 </header>
                 <div className="quality-signal-body">
@@ -350,7 +418,15 @@ export const CodeQualityAnalysis: React.FC<CodeQualityAnalysisProps> = ({ qualit
             <li className="quality-grid-item">
               <article className="quality-signal-card">
                 <header className="quality-signal-header">
-                  <h3 className="quality-signal-title">Comprobación de Tipos</h3>
+                  <div className="quality-signal-title-group">
+                    <span className="quality-signal-icon" aria-hidden="true">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="16 18 22 12 16 6"/>
+                        <polyline points="8 6 2 12 8 18"/>
+                      </svg>
+                    </span>
+                    <h3 className="quality-signal-title">Comprobación de Tipos</h3>
+                  </div>
                   <StatusBadge status={typeCheckingStatus} />
                 </header>
                 <div className="quality-signal-body">
@@ -386,7 +462,17 @@ export const CodeQualityAnalysis: React.FC<CodeQualityAnalysisProps> = ({ qualit
             <li className="quality-grid-item">
               <article className="quality-signal-card">
                 <header className="quality-signal-header">
-                  <h3 className="quality-signal-title">Gestión de Dependencias</h3>
+                  <div className="quality-signal-title-group">
+                    <span className="quality-signal-icon" aria-hidden="true">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m7.5 4.27 9 5.15"/>
+                        <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+                        <path d="m3.3 7 8.7 5 8.7-5"/>
+                        <path d="M12 22V12"/>
+                      </svg>
+                    </span>
+                    <h3 className="quality-signal-title">Gestión de Dependencias</h3>
+                  </div>
                   <StatusBadge status={dependenciesStatus} />
                 </header>
                 <div className="quality-signal-body">
@@ -423,3 +509,4 @@ export const CodeQualityAnalysis: React.FC<CodeQualityAnalysisProps> = ({ qualit
     </section>
   );
 };
+

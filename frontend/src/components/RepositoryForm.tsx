@@ -237,6 +237,33 @@ export const RepositoryForm: React.FC<RepositoryFormProps> = ({
                 )}
               </button>
             </div>
+
+            <div className="analyzer-quick-examples">
+              <span className="analyzer-examples-label">Ejemplos rápidos:</span>
+              <div className="analyzer-examples-list">
+                {[
+                  { o: 'encode', r: 'httpx' },
+                  { o: 'fastapi', r: 'fastapi' },
+                  { o: 'pallets', r: 'flask' },
+                  { o: 'facebook', r: 'react' },
+                ].map((sample) => (
+                  <button
+                    key={`${sample.o}/${sample.r}`}
+                    type="button"
+                    className="analyzer-example-pill"
+                    disabled={status === 'loading'}
+                    onClick={() => {
+                      setOwner(sample.o);
+                      setRepo(sample.r);
+                      setStatus('idle');
+                      setErrorMessage(null);
+                    }}
+                  >
+                    {sample.o}/{sample.r}
+                  </button>
+                ))}
+              </div>
+            </div>
           </form>
         </div>
       </div>

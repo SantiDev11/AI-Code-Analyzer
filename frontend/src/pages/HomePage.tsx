@@ -47,12 +47,69 @@ export const HomePage: React.FC = () => {
 
         {analysisResult && (
           <>
+            {/* Quick Navigation Sticky Bar */}
+            <nav className="analyzer-quicknav" aria-label="Navegación rápida de secciones">
+              <div className="analyzer-container">
+                <ul className="analyzer-quicknav-list">
+                  <li>
+                    <a href="#repository-overview" className="analyzer-quicknav-link">
+                      <span className="quicknav-icon">📊</span> Resumen
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#code-quality-analysis" className="analyzer-quicknav-link">
+                      <span className="quicknav-icon">🛡️</span> Calidad
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#code-metrics-analysis" className="analyzer-quicknav-link">
+                      <span className="quicknav-icon">📈</span> Métricas
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#repository-activity-analysis" className="analyzer-quicknav-link">
+                      <span className="quicknav-icon">⚡</span> Actividad
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#languages-analysis" className="analyzer-quicknav-link">
+                      <span className="quicknav-icon">🌐</span> Lenguajes
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#recent-commits-analysis" className="analyzer-quicknav-link">
+                      <span className="quicknav-icon">📦</span> Commits & PRs
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#ai-analysis" className="analyzer-quicknav-link">
+                      <span className="quicknav-icon">🤖</span> IA (Roadmap)
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </nav>
+
+            {/* 1. Repository Overview */}
             <RepositoryOverview repository={analysisResult.repository} />
+
+            {/* 2. Estándares de Calidad */}
+            <CodeQualityAnalysis quality={analysisResult.quality} />
+
+            {/* 3. Métricas Cuantitativas de Código */}
+            <CodeMetricsAnalysis metrics={analysisResult.metrics} />
+
+            {/* 4. Actividad Temporal Diaria */}
+            <RepositoryActivityAnalysis activity={analysisResult.activity} />
+
+            {/* 5. Lenguajes y Colaboradores */}
             <LanguagesAnalysis languages={analysisResult.languages} />
             <ContributorsAnalysis
               contributors={analysisResult.contributors}
               contributorsCount={analysisResult.contributors_count}
             />
+
+            {/* 6. Git Flow: Commits, Issues, PRs y Releases */}
             <RecentCommitsAnalysis commits={analysisResult.recent_commits} />
             <IssuesAnalysis
               issues={analysisResult.issues}
@@ -74,9 +131,8 @@ export const HomePage: React.FC = () => {
               draftReleasesCount={analysisResult.draft_releases_count}
               prereleasesCount={analysisResult.prereleases_count}
             />
-            <RepositoryActivityAnalysis activity={analysisResult.activity} />
-            <CodeQualityAnalysis quality={analysisResult.quality} />
-            <CodeMetricsAnalysis metrics={analysisResult.metrics} />
+
+            {/* 7. Inteligencia Artificial */}
             <AIAnalysis aiAnalysis={analysisResult.ai_analysis} />
           </>
         )}

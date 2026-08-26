@@ -93,18 +93,21 @@ const AIUnavailableSection: React.FC = () => (
     <div className="analyzer-container">
       <div className="ai-card ai-unavailable-card">
         <header className="ai-header">
-          <span className="repo-section-badge">Inteligencia Artificial</span>
+          <div className="ai-header-top">
+            <span className="repo-section-badge ai-badge-accent">Inteligencia Artificial</span>
+            <span className="ai-roadmap-pill">EN PROCESO • Próximamente</span>
+          </div>
           <div className="ai-title-row">
             <h2 id="ai-heading" className="ai-title">
               Análisis Técnico con IA
             </h2>
           </div>
         </header>
-        <div className="ai-empty" role="status">
-          <div className="ai-unavailable-icon" aria-hidden="true">
+        <div className="ai-empty ai-roadmap-container" role="status">
+          <div className="ai-roadmap-icon" aria-hidden="true">
             <svg
-              width="28"
-              height="28"
+              width="36"
+              height="36"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -112,21 +115,29 @@ const AIUnavailableSection: React.FC = () => (
               strokeLinecap="round"
               strokeLinejoin="round"
             >
-              <path d="M12 2v4" />
-              <path d="m4.93 4.93 2.83 2.83" />
-              <path d="M2 12h4" />
-              <path d="m4.93 19.07 2.83-2.83" />
-              <path d="M12 22v-4" />
-              <path d="m19.07 19.07-2.83-2.83" />
-              <path d="M22 12h-4" />
-              <path d="m19.07 4.93-2.83 2.83" />
+              <path d="M12 2a10 10 0 1 0 10 10H12V2z" />
+              <path d="M12 2a10 10 0 0 1 10 10" />
+              <circle cx="12" cy="12" r="4" />
             </svg>
           </div>
           <h3 className="ai-unavailable-title">AI analysis unavailable</h3>
-          <p className="repo-text-muted">
-            El análisis técnico estructurado con Inteligencia Artificial no está disponible
-            actualmente para este repositorio.
+          <p className="ai-roadmap-desc">
+            El motor de análisis técnico asistido por Inteligencia Artificial no está disponible actualmente para este repositorio y se encuentra en desarrollo activo en el roadmap del proyecto.
           </p>
+          <div className="ai-roadmap-features-preview">
+            <div className="ai-roadmap-feature-chip">
+              <span className="ai-roadmap-feature-dot" />
+              <span>Resumen Ejecutivo Automatizado</span>
+            </div>
+            <div className="ai-roadmap-feature-chip">
+              <span className="ai-roadmap-feature-dot" />
+              <span>Detección de Fortalezas & Riesgos</span>
+            </div>
+            <div className="ai-roadmap-feature-chip">
+              <span className="ai-roadmap-feature-dot" />
+              <span>Recomendaciones Accionables de Arquitectura</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -148,7 +159,10 @@ export const AIAnalysis: React.FC<AIAnalysisProps> = ({ aiAnalysis }) => {
       <div className="analyzer-container">
         <div className="ai-card">
           <header className="ai-header">
-            <span className="repo-section-badge">Inteligencia Artificial</span>
+            <div className="ai-header-top">
+              <span className="repo-section-badge ai-badge-accent">Inteligencia Artificial</span>
+              <span className="ai-roadmap-pill">EN PROCESO • Próximamente</span>
+            </div>
             <div className="ai-title-row">
               <h2 id="ai-heading" className="ai-title">
                 Análisis Técnico con IA
@@ -225,3 +239,4 @@ export const AIAnalysis: React.FC<AIAnalysisProps> = ({ aiAnalysis }) => {
     </section>
   );
 };
+
