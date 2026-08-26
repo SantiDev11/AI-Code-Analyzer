@@ -33,17 +33,47 @@ def test_la_interfaz_web_se_sirve_en_la_raiz(client):
 def test_la_hoja_de_estilos_enlazada_se_sirve(client):
     """Pide la ruta que enlaza el HTML, no una que demos por supuesta.
 
-    Comprobar directamente /static/style.css no vale: un href relativo se
-    resuelve contra "/" y da 404 aunque el archivo exista bajo /static, asi
-    que el test pasaria con la pagina sirviendose sin estilos.
+    Comprueba que los estilos referenciados en index.html se sirvan con
+    codigo 200 y content-type text/css.
     """
     html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
-    href = re.search(r'<link rel="stylesheet" href="([^"]+)"', html).group(1)
+    href = re.search(r'<link rel="stylesheet"[^>]*href="([^"]+)"', html).group(1)
 
     response = client.get(urljoin("/", href))
 
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/css")
+
+
+def test_docs_y_openapi_disponibles(client):
+    """Verifica que Swagger UI, ReDoc y OpenAPI sigan disponibles."""
+    docs_resp = client.get("/docs")
+    assert docs_resp.status_code == 200
+
+    openapi_resp = client.get("/openapi.json")
+    assert openapi_resp.status_code == 200
+    assert "paths" in openapi_resp.json()
+
+
+def test_spa_fallback_para_rutas_desconocidas(client):
+    """Las rutas no-API deben devolver index.html para routing de cliente SPA."""
+    response = client.get("/cualquier/ruta/frontend")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")
+    assert "AI-Code-Analyzer" in response.text
+
+
+def test_sin_secretos_en_frontend_dist():
+    """Verifica que ningun secreto del backend quede en los archivos estaticos."""
+    if not STATIC_DIR.exists():
+        return
+
+    for file_path in STATIC_DIR.rglob("*"):
+        if file_path.is_file() and file_path.suffix in {".js", ".html", ".css", ".map"}:
+            content = file_path.read_text(encoding="utf-8", errors="ignore")
+            assert "AI_API_KEY" not in content
+            assert "GITHUB_TOKEN" not in content
 
 
 def test_analyze_devuelve_la_estructura_esperada(client, fake_github):

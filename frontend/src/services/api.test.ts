@@ -90,4 +90,31 @@ describe('API Service - analyzeRepository', () => {
       message: expect.stringContaining('no respondió a tiempo'),
     });
   });
+
+  test('emplea ruta relativa y no inyecta tokens secretos en cabeceras', async () => {
+    let capturedUrl = '';
+    let capturedHeaders: Record<string, string> = {};
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+        capturedUrl = url.toString();
+        capturedHeaders = (init?.headers as Record<string, string>) || {};
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ repository: { name: 'demo' } }),
+        } as Response;
+      })
+    );
+
+    await analyzeRepository('user', 'project');
+
+    // Debe llamar a /analyze/user/project
+    expect(capturedUrl).toMatch(/\/analyze\/user\/project$/);
+    // No debe enviar credenciales sensibles del backend
+    expect(capturedHeaders['Authorization']).toBeUndefined();
+    expect(capturedHeaders['X-GitHub-Token']).toBeUndefined();
+    expect(capturedHeaders['X-AI-Key']).toBeUndefined();
+  });
 });

@@ -67,9 +67,11 @@ export async function analyzeRepository(
   const encodedOwner = encodeURIComponent(owner.trim());
   const encodedRepo = encodeURIComponent(repo.trim());
 
+  // En arquitectura unificada las peticiones son relativas al mismo origen (/analyze/...)
+  const path = `${baseUrl}/analyze/${encodedOwner}/${encodedRepo}`;
   const origin =
-    typeof window !== 'undefined' && window.location ? window.location.origin : 'http://localhost:3000';
-  const url = new URL(`${baseUrl}/analyze/${encodedOwner}/${encodedRepo}`, origin);
+    typeof window !== 'undefined' && window.location ? window.location.origin : 'http://localhost:8000';
+  const url = new URL(path, origin);
 
   if (options?.commits !== undefined) {
     url.searchParams.set('commits', options.commits.toString());

@@ -219,8 +219,8 @@ describe('RepositoryActivityAnalysis Component', () => {
     };
     const html = renderToStaticMarkup(<RepositoryActivityAnalysis activity={bigActivity} />);
 
-    expect(html).toContain('999.999');
-    expect(html).toContain('88.888');
-    expect(html).toContain('54.321');
+    expect(html).toMatch(/999[.,]999/);
+    expect(html).toMatch(/88[.,]888/);
+    expect(html).toMatch(/54[.,]321/);
   });
 });

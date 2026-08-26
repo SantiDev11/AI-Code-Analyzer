@@ -1,8 +1,45 @@
 # AI-Code-Analyzer
 
 [![CI](https://github.com/SantiDev11/AI-Code-Analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/SantiDev11/AI-Code-Analyzer/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
 
-Backend en FastAPI que realiza un análisis técnico integral de repositorios públicos de GitHub combinando datos de la GitHub REST API, señales de calidad de código, métricas cuantitativas y un análisis técnico estructurado generado por Inteligencia Artificial.
+**Aplicación web que radiografía cualquier repositorio público de GitHub.**
+
+Escribes un propietario y un repositorio, y obtienes en un solo panel lo que normalmente exige abrir diez pestañas: metadatos, lenguajes, colaboradores, commits, issues, pull requests, releases, actividad, señales de calidad, métricas de estructura y un análisis técnico generado por Inteligencia Artificial.
+
+- 🔗 **Datos reales de la GitHub REST API**, consultados en el momento.
+- 🤖 **AI Analysis** fundamentado estrictamente en la evidencia recogida.
+- 🔒 **Nunca ejecuta el código analizado**: solo lee metadatos y el árbol de archivos.
+- 📦 **Arquitectura unificada**: React y FastAPI viajan en la misma imagen y comparten origen.
+
+El flujo principal es el **frontend**: el usuario abre una URL, rellena el formulario y explora los resultados sin salir de la interfaz. Detrás, FastAPI actúa como motor de análisis y sirve además la propia aplicación React. La API queda accesible por si quieres consumirla directamente (ver [Endpoints](#endpoints)), pero no es el camino previsto para el usuario final.
+
+---
+
+## 🚀 Demo
+
+### ▶️ [**Probar AI-Code-Analyzer**](https://ai-code-analyzer-1-qm5f.onrender.com)
+
+**No necesitas instalar nada para probar la versión desplegada.**
+
+> ℹ️ La demo corre en el plan gratuito de Render: si lleva un rato inactiva, la primera petición puede tardar unos segundos en despertarla. Además **no tiene `AI_API_KEY` configurada**, así que `ai_analysis` llega como `null`; el resto del análisis funciona con normalidad.
+
+---
+
+## ⚡ Cómo usarlo
+
+1. Abre la [demo](https://ai-code-analyzer-1-qm5f.onrender.com) — o <http://localhost:8000> si lo ejecutas en local.
+2. Escribe el **propietario u organización** de GitHub — por ejemplo `encode`.
+3. Escribe el **repositorio** — por ejemplo `httpx`.
+4. Pulsa **Analyze Repository**.
+5. Explora el panel: cada dimensión del análisis se despliega en su propia tarjeta.
+
+Acepta cualquier **repositorio público** de GitHub. Los privados no son accesibles y devuelven un error explicativo.
 
 ---
 
@@ -254,11 +291,25 @@ AI_TIMEOUT_SECONDS=30.0
 
 > **Comportamiento sin IA:** Si `AI_API_KEY` no se define o está vacía, el análisis de GitHub funciona con total normalidad y `ai_analysis` devuelve `null` de forma segura.
 
+### Variable pública del frontend
+
+El frontend admite una única variable, declarada en `frontend/.env.example`:
+
+| Variable | Por defecto | Descripción |
+| --- | --- | --- |
+| `VITE_API_BASE_URL` | vacía | URL base de la API. **Vacía** = peticiones relativas al mismo origen, que es lo que necesita la arquitectura unificada |
+
+En la arquitectura unificada **debe quedarse vacía**: la interfaz y la API comparten origen, así que el cliente llama a `/analyze/...` de forma relativa. También sirve vacía durante el desarrollo con Vite, porque su proxy redirige `/analyze` y `/health` al backend.
+
+> ⚠️ **Las variables `VITE_*` no son secretas.** Vite las sustituye por su valor literal **durante el build** y quedan incrustadas en el JavaScript que descarga cualquier visitante: se leen abriendo las DevTools. Nunca pongas ahí un token ni una clave de API — para eso están `GITHUB_TOKEN` y `AI_API_KEY`, que viven exclusivamente en el backend.
+>
+> Si alguna vez le das valor, debe ser una **URL pública alcanzable desde el navegador**, y cambiarla exige **reconstruir** el bundle: no basta con reiniciar el proceso.
+
 ---
 
 ## Instalación y Ejecución
 
-### 1. Backend (FastAPI)
+### 1. Desarrollo Local Unificado o Backend (FastAPI)
 
 Requiere **Python 3.12+**.
 
@@ -271,13 +322,19 @@ python -m venv .venv
 # 2. Instalar dependencias
 pip install -r requirements.txt
 
-# 3. Iniciar servidor de desarrollo
+# 3. (Opcional) Compilar frontend para servirlo directamente desde FastAPI
+cd frontend && npm install && npm run build && cd ..
+
+# 4. Iniciar servidor
 uvicorn app.main:app --reload
 ```
 
-Accede a <http://127.0.0.1:8000/docs> para explorar y probar la API en Swagger UI.
+Accede a:
+- <http://127.0.0.1:8000/> para la interfaz web React (si `frontend/dist` está compilado).
+- <http://127.0.0.1:8000/docs> para explorar la API en Swagger UI.
+- <http://127.0.0.1:8000/health> para comprobar el estado del servicio.
 
-### 2. Frontend (React + TypeScript + Vite)
+### 2. Desarrollo Frontend Independiente con Vite (HMR)
 
 Requiere **Node.js 18+** y **npm**.
 
@@ -286,63 +343,53 @@ Requiere **Node.js 18+** y **npm**.
 cd frontend
 npm install
 
-# 2. Configurar variables de entorno (opcional)
-# Por defecto el proxy de Vite redirige las llamadas locales a http://localhost:8000,
-# así que VITE_API_BASE_URL puede quedarse vacía.
-cp .env.example .env
-# Solo si el backend vive en otro dominio, con su URL pública y accesible
-# desde el navegador. El valor se incrusta en el bundle: nunca pongas secretos.
-# VITE_API_BASE_URL=https://api.example.com
-
-# 3. Iniciar servidor de desarrollo frontend
+# 2. Iniciar servidor de desarrollo frontend con Hot Module Replacement
 npm run dev
 
-# 4. Compilar bundle de producción
-npm run build
-
-# 5. Comprobación estricta de tipos
+# 3. Comprobación estricta de tipos y compilación
 npm run typecheck
+npm run build
 ```
 
-Accede a <http://localhost:3000> para interactuar con la interfaz del analizador.
+El servidor de desarrollo de Vite corre en <http://localhost:3000> y redirige automáticamente por proxy las peticiones `/analyze` y `/health` al backend en <http://localhost:8000>.
 
 ---
 
-## Ejecución con Docker
+## Ejecución con Docker (Servicio Único Unificado)
 
-Empaqueta el proyecto completo (backend + frontend) sin instalar Python ni Node en la máquina.
+Empaqueta la aplicación completa (**React + FastAPI**) en una sola imagen de producción optimizada mediante una compilación multi-stage.
 
 ### Prerequisitos
 
-- **Docker Engine 24+** con el plugin **Docker Compose v2** (`docker compose`, no `docker-compose`).
-- Docker Desktop en marcha si estás en Windows o macOS.
+- **Docker Engine 24+** con plugin **Docker Compose v2** (`docker compose`).
+- Docker Desktop activo en Windows o macOS.
 
-### Arquitectura
+### Arquitectura Unificada
 
-Dos imágenes independientes coordinadas por `compose.yaml`:
+Un único contenedor desplegable:
 
-| Servicio   | Imagen base                       | Puerto interno | Puerto publicado |
-| ---------- | --------------------------------- | -------------- | ---------------- |
-| `backend`  | `python:3.12-slim` + Uvicorn      | 8000           | `8000`           |
-| `frontend` | `nginx-unprivileged` (multi-stage) | 8080           | `3000`           |
+| Servicio | Imagen base / Etapas | Puerto interno | Puerto publicado |
+| -------- | -------------------- | -------------- | ---------------- |
+| `app`    | Multi-stage: `node:22-alpine` (build) + `python:3.12-slim` (runtime) | 8000 | `8000` |
 
-El frontend se compila con Node en una etapa de build y el bundle estático resultante lo sirve nginx. El servidor de desarrollo de Vite **no** se usa en runtime.
-
-El navegador solo habla con `http://localhost:3000`. Las llamadas a `/analyze/...` y `/health` salen relativas a ese mismo origen y nginx las reenvía al contenedor `backend` por la red interna de Docker:
+El build de React se genera en el Stage 1 (`node:22-alpine`) y se transfiere al Stage 2 (`python:3.12-slim`). FastAPI sirve directamente la aplicación SPA en `/` y sus assets `/assets/...`, al tiempo que expone los endpoints `/analyze/{owner}/{repo}`, `/health` y `/docs`.
 
 ```
-Navegador ──► localhost:3000 (nginx) ──► backend:8000 (red interna)
+Navegador ──► http://localhost:8000 (FastAPI)
+                   ├── /               ──► React Frontend (index.html)
+                   ├── /assets/...     ──► JS / CSS estáticos compilados
+                   ├── /analyze/...    ──► Análisis con GitHub API + IA
+                   ├── /health         ──► Healthcheck
+                   └── /docs           ──► Swagger UI
 ```
 
-El hostname `backend` solo lo resuelve nginx dentro de la red de Compose; el navegador nunca lo necesita.
-
-### Comandos
+### Comandos Docker
 
 ```bash
-# Construir las imágenes
+# Construir la imagen unificada
 docker compose build
 
-# Levantar (en primer plano, con logs)
+# Levantar el servicio
 docker compose up
 
 # Construir y levantar en un solo paso
@@ -351,10 +398,10 @@ docker compose up --build
 # Levantar en segundo plano
 docker compose up -d
 
-# Ver el estado y los healthchecks
+# Ver el estado y healthcheck
 docker compose ps
 
-# Detener y eliminar los contenedores
+# Detener y limpiar contenedores
 docker compose down
 ```
 
@@ -362,62 +409,53 @@ docker compose down
 
 | Recurso            | URL                             |
 | ------------------ | ------------------------------- |
-| Frontend           | <http://localhost:3000>         |
-| Backend (API)      | <http://localhost:8000>         |
+| Aplicación Web     | <http://localhost:8000>         |
 | Swagger UI         | <http://localhost:8000/docs>    |
+| ReDoc              | <http://localhost:8000/redoc>   |
 | Health check       | <http://localhost:8000/health>  |
 
-`/health` también es accesible desde el origen del frontend en <http://localhost:3000/health>, ya que nginx hace de proxy. Es el mismo endpoint que usa el `healthcheck` del contenedor: el `frontend` no arranca hasta que el `backend` responde sano.
+### Variables de Entorno
 
-### Variables de entorno
+Compose lee el archivo `.env` de la raíz (ignorado por git) e inyecta las variables en el contenedor. `.dockerignore` excluye `.env` del contexto de build, garantizando que ninguna credencial quede expuesta en las capas de la imagen.
 
-Compose lee el archivo `.env` de la raíz (ignorado por git) y **inyecta** sus valores como variables de entorno del contenedor. Ese archivo nunca se copia dentro de la imagen: `.dockerignore` lo excluye del contexto de build, así que ningún secreto queda en las capas ni en el historial de la imagen.
-
-Todas las variables son opcionales; sin ninguna de ellas los contenedores arrancan igualmente y el análisis de GitHub funciona (con el rate limit anónimo y sin IA).
-
-**Variables secretas — solo backend, nunca salen del contenedor:**
+**Variables secretas (exclusivamente en el backend):**
 
 | Variable       | Descripción                                                      |
 | -------------- | ---------------------------------------------------------------- |
 | `GITHUB_TOKEN` | Token personal de GitHub. Eleva el rate limit de 60 a 5000 req/h. |
 | `AI_API_KEY`   | Clave del proveedor de IA. Sin ella, `ai_analysis` devuelve `null`. |
 
-**Variables de configuración — no sensibles, también solo backend:**
+> 🔒 **Seguridad:** `GITHUB_TOKEN` y `AI_API_KEY` residen únicamente en el backend. El frontend jamás recibe ni manipula estas claves.
+
+**Variables de configuración:**
 
 `AI_PROVIDER`, `AI_MODEL`, `AI_BASE_URL`, `AI_TIMEOUT_SECONDS`, `CACHE_TTL_SECONDS`, `ACTIVITY_DAYS`, `CORS_ALLOWED_ORIGINS`.
 
-**Variables públicas — frontend:**
-
-| Variable             | Descripción                                                                |
-| -------------------- | -------------------------------------------------------------------------- |
-| `VITE_API_BASE_URL`  | URL base del backend. Vacía por defecto: el bundle usa rutas relativas.     |
-
-> ⚠️ **Las variables `VITE_*` no son secretas.** Vite las sustituye por su valor literal *durante el build*, quedando incrustadas en el JavaScript que descarga el navegador. Cualquiera puede leerlas abriendo las DevTools. Nunca pongas en una `VITE_*` un token, una clave de API ni ningún otro secreto: para eso están `GITHUB_TOKEN` y `AI_API_KEY`, que viven exclusivamente en el backend.
-
-#### Cómo se resuelve `VITE_API_BASE_URL`
-
-Se pasa como `build arg` al `frontend/Dockerfile`, porque el valor debe existir en el momento de compilar (cambiarlo exige reconstruir la imagen, no basta con reiniciar el contenedor).
-
-- **Vacía (por defecto con Compose):** el cliente hace peticiones relativas (`/analyze/...`) y nginx las reenvía al backend. Mismo origen, sin CORS.
-- **Con valor** (por ejemplo `https://api.midominio.com`): el navegador llama directamente a esa URL. Debe ser una URL **pública, alcanzable desde el navegador** — nunca `http://backend:8000`, que solo existe dentro de la red de Docker. En ese caso hay que añadir el origen del frontend a `CORS_ALLOWED_ORIGINS`.
+**Variable pública del frontend:** `VITE_API_BASE_URL` se resuelve **en tiempo de build**, dentro de la etapa de Node del `Dockerfile`. En la imagen unificada se deja vacía para que el bundle use rutas relativas. Nunca debe contener secretos ([detalle](#variable-pública-del-frontend)).
 
 ### CORS
 
-El backend configura los orígenes permitidos con `CORS_ALLOWED_ORIGINS` (lista separada por comas). **Nunca se usa `allow_origins=["*"]`**; los métodos se limitan a `GET` y `OPTIONS`.
+Al servirse el frontend y la API bajo el mismo origen (`http://localhost:8000` o la URL única de producción en Render), **CORS no interviene en producción**. Se mantiene la configuración de `CORS_ALLOWED_ORIGINS` para permitir desarrollo local desacoplado (puertos 3000 o 5173).
 
-Por defecto se permiten `http://localhost:3000` y `http://localhost:5173` (más sus variantes `127.0.0.1`), que cubren tanto el frontend de Docker como `npm run dev`.
+### Despliegue en Render
 
-Con la configuración estándar de Compose el navegador nunca hace peticiones cross-origin, porque nginx sirve la interfaz y la API bajo el mismo origen. CORS solo entra en juego en llamadas directas al puerto 8000 (Swagger UI, `curl`, `npm run dev`) o si publicas el backend en un dominio distinto, en cuyo caso basta con ajustar la variable:
+Para desplegar la imagen unificada como un **único Web Service**:
 
-```bash
-CORS_ALLOWED_ORIGINS=https://midominio.com
-```
+1. Crear un **Web Service** conectado al repositorio.
+2. Seleccionar entorno **Docker**.
+3. Render construye la imagen con el `Dockerfile` multi-stage y expone la aplicación completa — interfaz y API — en **una sola URL pública**.
+4. Definir las variables de entorno (`GITHUB_TOKEN`, `AI_API_KEY`, …) en el panel de Render.
 
-### Notas de seguridad
+Con un único servicio no hace falta tocar `CORS_ALLOWED_ORIGINS` ni `VITE_API_BASE_URL`: al compartir origen, no hay peticiones cross-origin.
 
-- Ambos contenedores ejecutan como usuario **sin privilegios** (`appuser` uid 1000 en el backend; nginx unprivileged en el frontend).
-- Ni `.env`, ni `.venv`, ni `node_modules` del host entran en el contexto de build (`.dockerignore` y `frontend/.dockerignore`).
-- No hay ningún secreto escrito en los `Dockerfile` ni en `compose.yaml`: solo referencias `${VARIABLE}`.
+**Despliegue actualmente en línea:**
+
+| Servicio | URL |
+| --- | --- |
+| Aplicación web | <https://ai-code-analyzer-1-qm5f.onrender.com> |
+| API | <https://ai-code-analyzer-viqi.onrender.com> |
+
+> ℹ️ Esas dos URLs corresponden al despliegue **anterior**, hecho como dos servicios separados (interfaz y API en dominios distintos, comunicados por CORS). Siguen operativas y son las que abre la [demo](#-demo). La migración del despliegue al Web Service único descrito arriba **está pendiente**: el repositorio ya es unificado, la infraestructura todavía no.
 
 ---
 
@@ -432,6 +470,8 @@ pytest
 
 Todas las pruebas del backend utilizan transportes simulados (`httpx.MockTransport`): no consumen cuota de la GitHub API ni realizan peticiones reales al proveedor de IA.
 
+Cubren también la capa unificada: que `/docs` y `/openapi.json` sigan disponibles, que las rutas desconocidas devuelvan la SPA y que los archivos servidos no contengan secretos.
+
 ### Tests del Frontend (Vitest)
 
 ```bash
@@ -440,6 +480,11 @@ npm test
 ```
 
 Las suites de pruebas del frontend renderizan los componentes de forma estática con datos mockeados y verifican accesibilidad semántica, ausencia de valores nulos o inválidos y gestión de estados.
+
+| Suite | Estado actual |
+| --- | --- |
+| Backend (pytest) | **255 tests** |
+| Frontend (Vitest) | **180 tests** en 13 archivos |
 
 ---
 
@@ -464,7 +509,7 @@ Tres jobs. `backend` y `frontend` corren **en paralelo**; `docker` solo arranca 
 | `frontend` | Node 22     | `npm ci` → `npm test` → `npm run typecheck` → `npm run build` |
 | `docker`   | —           | `docker compose config` → `docker compose build`              |
 
-Las versiones no son arbitrarias: **Python 3.12** es la de la imagen de producción (`Dockerfile`) y **Node 22** la de la etapa de build de `frontend/Dockerfile`. La CI valida lo que realmente se despliega.
+Las versiones no son arbitrarias: ambas salen del `Dockerfile` unificado — **Node 22** es la etapa que compila el frontend y **Python 3.12** la que ejecuta la aplicación en producción. La CI valida lo que realmente se despliega.
 
 El caché de dependencias se apoya en los lockfiles (`requirements*.txt` y `frontend/package-lock.json`): al cambiar cualquiera de ellos, la clave de caché cambia y se reinstala desde cero.
 
@@ -474,7 +519,7 @@ El caché de dependencias se apoya en los lockfiles (`requirements*.txt` y `fron
 | ---------- | ------------------------------------------------------------------------------------ |
 | `backend`  | Cualquier test de `pytest` que falle, o un error instalando dependencias.             |
 | `frontend` | Un test de Vitest en rojo, un error de tipos en `tsc`, o un fallo de `vite build`.    |
-| `docker`   | `compose.yaml` inválido, o que alguna de las dos imágenes no construya.               |
+| `docker`   | `compose.yaml` inválido, o que la imagen unificada no construya.                      |
 
 `npm run build` ejecuta `tsc && vite build`, así que un error de tipos también rompe el build además del paso de `typecheck`.
 
@@ -482,7 +527,7 @@ El caché de dependencias se apoya en los lockfiles (`requirements*.txt` y `fron
 
 **La CI no necesita ningún secreto.** No se declaran `GITHUB_TOKEN` ni `AI_API_KEY` en el workflow: los tests del backend sustituyen el cliente HTTP por transportes simulados (`tests/conftest.py`), de modo que **no se llama a la GitHub API ni a ningún proveedor de IA** durante la ejecución.
 
-El job de `docker` solo construye las imágenes; **no publica nada** en ningún registro.
+El job de `docker` solo construye la imagen; **no publica nada** en ningún registro y **no despliega**: la publicación en Render se hace aparte.
 
 Los permisos del token automático están reducidos al mínimo:
 
@@ -496,9 +541,13 @@ permissions:
 ## Arquitectura Interna
 
 ```
-Cliente HTTP (Swagger / Frontend / cURL)
+Usuario (navegador)
                      ↓
-             app/api/routes.py
+Frontend React + TypeScript   ← punto principal del flujo: formulario y panel
+                     ↓   GET /analyze/{owner}/{repo}   (mismo origen, sin CORS)
+             app/main.py      ← sirve la SPA en "/", sus assets en "/assets" y monta la API
+                     ↓
+             app/api/routes.py ← valida parametros y traduce errores a codigos HTTP
                      ↓
         app/services/github.py (Orquestador de llamadas en paralelo)
        ├── GitHub REST API (8 endpoints paralelos)
@@ -512,6 +561,8 @@ Cliente HTTP (Swagger / Frontend / cURL)
        └── app/services/cache.py (Caché en memoria con TTL)
 ```
 
+Una sola aplicación cubre las dos capas: **el frontend concentra la interacción** — es lo único que ve el usuario — y el backend concentra el análisis. No hay lógica de análisis duplicada en el cliente: el navegador **no llama nunca a la GitHub API** directamente, lo que mantiene `GITHUB_TOKEN` y `AI_API_KEY` fuera del bundle.
+
 ---
 
 ## Limitaciones Conocidas
@@ -521,3 +572,5 @@ Cliente HTTP (Swagger / Frontend / cURL)
 3. **Señales de Calidad Nulas:** Si el árbol de archivos no está disponible o fue truncado, las señales de calidad se marcan como `null` en lugar de `false`.
 4. **Disponibilidad de IA:** `ai_analysis` depende de la conectividad y cuota del proveedor externo configurado. Ante errores del proveedor, rate limits o respuestas malformadas, el sistema degrada elegantemente devolviendo `ai_analysis: null` sin afectar la respuesta general.
 5. **Aislamiento y Seguridad:** El backend **nunca** ejecuta archivos, scripts, `Makefile`, `package.json` ni dependencias del repositorio analizado.
+6. **Rutas desconocidas devuelven la interfaz, no un 404:** para que el enrutado del lado del cliente funcione, cualquier ruta no reconocida responde `index.html` con código `200`. Efecto práctico: una ruta de API mal escrita (`/analize/...`, `/healht`) devuelve HTML con `200` en lugar de un `404` JSON. Los errores reales del análisis **sí** conservan su código: un repositorio inexistente sigue devolviendo `404` con su `detail`.
+7. **Origen de los archivos servidos:** la aplicación sirve `frontend/dist` si encuentra ahí un `index.html`; si no existe, recurre a `app/static`, una maqueta estática sin JavaScript. Por eso, en un entorno donde el frontend no se haya compilado, la raíz muestra esa maqueta en vez de la aplicación React. Compilar con `npm run build` (o usar la imagen Docker, que lo hace sola) resuelve el caso.
